@@ -1,9 +1,6 @@
-type Post = {
-  id: string;
-  title: string;
-};
+import { Post } from "@/app/posts/page";
 
-export async function generateStaticParams() {
+export async function generateStaticParams(): Promise<{ id: string }[]> {
   const res = await fetch("https://jsonplaceholder.typicode.com/posts");
   const posts: Post[] = await res.json();
 
@@ -12,7 +9,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export default async function PostPage({ params }: { params: { id: string } }) {
+type Props = { params: Promise<{ id: string }> };
+
+export default async function PostPage({ params }: Props) {
   const { id } = await params;
   const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
     cache: "force-cache",

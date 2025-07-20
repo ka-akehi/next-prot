@@ -1,3 +1,8 @@
+export type Post = {
+  id: number;
+  title: string;
+};
+
 async function getPosts() {
   const res = await fetch("https://jsonplaceholder.typicode.com/posts", {
     cache: "force-cache", // ✅ SSG（ビルド時にキャッシュされる）
@@ -12,7 +17,7 @@ export default async function PostsPage() {
     <main>
       <h1>Posts</h1>
       <ul>
-        {posts.map((post: any) => (
+        {posts.map((post: Post) => (
           <li key={post.id}>{post.title}</li>
         ))}
       </ul>
