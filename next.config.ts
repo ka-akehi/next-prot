@@ -1,7 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [
+      {
+        source: "/xss/5-csp",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self';",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
