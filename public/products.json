@@ -1,0 +1,35 @@
+[
+  {
+    "id": "p1",
+    "name": "T-Shirt",
+    "price": 1990,
+    "description": "Soft cotton T-shirt",
+    "category": "clothing",
+    "tags": [
+      "summer",
+      "cotton"
+    ]
+  },
+  {
+    "id": "p2",
+    "name": "Jeans",
+    "price": 4990,
+    "description": "Classic blue jeans",
+    "category": "clothing",
+    "tags": [
+      "denim",
+      "long-pants"
+    ]
+  },
+  {
+    "id": "p3",
+    "name": "Sneakers",
+    "price": 7990,
+    "description": "Comfort running shoes",
+    "category": "shoes",
+    "tags": [
+      "sport",
+      "running"
+    ]
+  }
+]
