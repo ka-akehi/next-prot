@@ -14,10 +14,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  experimental: {
-    serverActions: {}, // Next15では必要に応じて
-  },
-  reactStrictMode: true,
 };
 
 export default nextConfig;
