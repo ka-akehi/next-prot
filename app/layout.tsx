@@ -1,4 +1,3 @@
-import ThemeToggle from '@/components/ThemeToggle';
 import RegisterServiceWorker from '@/components/todo/RegisterServiceWorker';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -33,9 +32,6 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <RegisterServiceWorker />
-        <header className="p-4">
-          <ThemeToggle />
-        </header>
         {children}
       </body>
     </html>

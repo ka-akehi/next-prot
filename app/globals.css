@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --animate-shimmer: shimmer 1.5s infinite linear;
@@ -12,4 +14,3 @@
     }
   }
 }
-@custom-variant dark (&:where(.dark, .dark *));

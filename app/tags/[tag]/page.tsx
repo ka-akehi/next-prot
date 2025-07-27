@@ -7,7 +7,7 @@ export async function generateStaticParams() {
   return tags.map((tag) => ({ tag }));
 }
 
-export default async function TagPage({ params }: { params: { tag: string } }) {
+export default async function TagPage({ params }: { params: Promise<{ tag: string }> }) {
   const { tag } = await params;
 
   const posts = getPostsByTag(tag);
