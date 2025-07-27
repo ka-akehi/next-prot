@@ -1,14 +1,4 @@
 import type { NextConfig } from 'next';
-import nextPwa from 'next-pwa';
-
-/** @type {import('next').NextConfig} */
-const withPWA = nextPwa({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  buildExcludes: [/middleware-manifest\.json$/],
-});
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -30,4 +20,4 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default withPWA(nextConfig);
+export default nextConfig;
