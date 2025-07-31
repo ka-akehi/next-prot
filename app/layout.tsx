@@ -1,3 +1,5 @@
+import Header from '@/app/_components/Header';
+import { AuthSessionProvider } from '@/app/providers/session-provider';
 import RegisterServiceWorker from '@/components/todo/RegisterServiceWorker';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -31,8 +33,11 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <RegisterServiceWorker />
-        {children}
+        <AuthSessionProvider>
+          <Header />
+          <RegisterServiceWorker />
+          {children}
+        </AuthSessionProvider>
       </body>
     </html>
   );
