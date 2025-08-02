@@ -2,27 +2,25 @@
 
 import { getAuthSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-log';
 
-export async function createPost(formData: FormData) {
-  const session = await getAuthSession();
-  if (!session?.user?.id) {
-    throw new Error('ログインが必要です');
+export async function createPost({ content, userId }: { content: string; userId: string }) {
+  try {
+    if (!content.trim()) {
+      throw new Error('投稿内容が空です');
+    }
+
+    const post = await prisma.post.create({
+      data: {
+        content,
+        userId, // ← ✅ ここで使われる
+      },
+    });
+    return post;
+  } catch (error) {
+    await logServerError(error, 'createPost');
+    throw new Error('投稿作成中にエラーが発生しました');
   }
-
-  const content = formData.get('content')?.toString().trim();
-  if (!content) {
-    throw new Error('投稿内容が空です');
-  }
-
-  await prisma.post.create({
-    data: {
-      content,
-      userId: session.user.id,
-    },
-  });
-
-  revalidatePath('/bbs');
 }
 
 export async function deletePost(postId: string) {

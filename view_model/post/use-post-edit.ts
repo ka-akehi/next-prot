@@ -1,54 +1,51 @@
 'use client';
 
+import { updatePost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
-import { updatePost } from './post-actions';
 
-export function usePostEdit(initialContent: string) {
+export function usePostEdit(postId: string, initialContent: string) {
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(initialContent);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter(); // ← ✅ 追加
 
-  const start = useCallback(() => {
-    setEditing(true);
-  }, []);
-
-  const cancel = useCallback(() => {
+  const startEdit = () => setEditing(true);
+  const cancelEdit = () => {
     setContent(initialContent);
     setEditing(false);
-  }, [initialContent]);
+    setError(null);
+  };
 
-  const save = useCallback(
-    async (postId: string) => {
-      if (!content.trim()) {
-        setError('内容を入力してください');
-        return;
-      }
+  const save = useCallback(async () => {
+    if (!content.trim()) {
+      setError('投稿内容を入力してください');
+      return;
+    }
 
-      try {
-        setLoading(true);
-        await updatePost(postId, content.trim());
-        setEditing(false);
-        router.refresh();
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [content, router]
-  );
+    try {
+      setLoading(true);
+      await updatePost(postId, content.trim());
+      router.refresh(); // ✅ 編集結果を即時反映
+      setEditing(false);
+      setError(null);
+    } catch (err: unknown) {
+      console.error(err);
+      setError('投稿の更新に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  }, [postId, content, router]);
 
   return {
     editing,
+    startEdit,
+    cancelEdit,
     content,
-    error,
-    loading,
     setContent,
-    start,
-    cancel,
     save,
+    loading,
+    error,
   };
 }

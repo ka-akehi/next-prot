@@ -70,3 +70,22 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model ServerErrorLog {
+  id        String   @id @default(cuid())
+  message   String
+  stack     String?
+  digest    String?
+  pathname  String
+  userAgent String
+  createdAt DateTime @default(now())
+}
+
+model ClientErrorLog {
+  id         String   @id @default(cuid())
+  message    String
+  stack      String?
+  pathname   String
+  userAgent  String
+  createdAt  DateTime @default(now())
+}
