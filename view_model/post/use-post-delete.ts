@@ -1,30 +1,26 @@
 'use client';
 
+import { deletePost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
-import { deletePost } from './post-actions';
 
-export function usePostDelete() {
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+export function usePostDelete(postId: string) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const remove = useCallback(
-    async (postId: string) => {
-      try {
-        setLoadingId(postId);
-        await deletePost(postId);
-        router.refresh();
-      } catch (err) {
-        alert((err as Error).message);
-      } finally {
-        setLoadingId(null);
-      }
-    },
-    [router]
-  );
+  const remove = useCallback(async () => {
+    try {
+      setLoading(true);
+      await deletePost(postId);
+      router.refresh(); // ✅ 削除後に一覧を再取得
+    } catch (err: unknown) {
+      console.error(err);
+      setError('削除に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  }, [postId, router]);
 
-  return {
-    remove,
-    loadingId,
-  };
+  return { remove, loading, error };
 }

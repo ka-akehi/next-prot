@@ -1,21 +1,16 @@
-import { PostItem } from '@/components/post';
+import { PostWithUser } from '@/types/post';
+import { PostItem } from './post-item';
 
 type Props = {
-  posts: {
-    id: string;
-    content: string;
-    createdAt: Date;
-    userId: string;
-    user?: { name?: string | null };
-  }[];
+  posts: PostWithUser[];
 };
 
 export function PostList({ posts }: Props) {
   return (
-    <div className="space-y-4">
+    <ul className="space-y-4">
       {posts.map((post) => (
         <PostItem key={post.id} post={post} />
       ))}
-    </div>
+    </ul>
   );
 }

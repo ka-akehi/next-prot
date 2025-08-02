@@ -1,48 +1,53 @@
 'use client';
 
-import { PostActions } from '@/components/post/post-actions';
-import { PostContent } from '@/components/post/post-content';
-import { PostEditForm } from '@/components/post/post-edit-form';
 import { usePostDelete } from '@/view_model/post/use-post-delete';
 import { usePostEdit } from '@/view_model/post/use-post-edit';
-import { useSession } from 'next-auth/react';
+import type { Post } from '@prisma/client';
+import { PostActions } from './post-actions';
+import { PostContent } from './post-content';
+import { PostEditor } from './post-editor';
 
-type Props = {
-  post: {
-    id: string;
-    content: string;
-    userId: string;
-    user?: { name?: string | null };
-    createdAt: Date;
+type PostWithUser = Post & {
+  user?: {
+    name?: string | null;
   };
 };
 
-export function PostItem({ post }: Props) {
-  const { data: session } = useSession();
-  const { remove, loadingId } = usePostDelete();
-  const { editing, content, error, loading, setContent, start, cancel, save } = usePostEdit(post.content);
+type Props = {
+  post: PostWithUser;
+};
 
-  const isOwner = session?.user?.id === post.userId;
+export function PostItem({ post }: Props) {
+  const { remove, loading: isDeleting, error: deleteError } = usePostDelete(post.id);
+  const {
+    editing,
+    startEdit,
+    cancelEdit,
+    content,
+    setContent,
+    save,
+    loading: isUpdating,
+    error: updateError,
+  } = usePostEdit(post.id, post.content);
 
   return (
-    <div className="border p-4 rounded shadow-sm relative space-y-2">
+    <li className="relative border p-4 rounded space-y-2">
       {editing ? (
-        <PostEditForm
+        <PostEditor
           content={content}
           setContent={setContent}
-          error={error}
-          loading={loading}
-          onSave={() => save(post.id)}
-          onCancel={cancel}
+          save={save}
+          cancel={cancelEdit}
+          loading={isUpdating}
+          error={updateError}
         />
       ) : (
-        <>
-          <PostContent post={post} />
-          {isOwner && (
-            <PostActions onEdit={start} onDelete={() => remove(post.id)} isDeleting={loadingId === post.id} />
-          )}
-        </>
+        <PostContent post={post} />
       )}
-    </div>
+
+      {deleteError && <p className="text-red-500 text-sm">{deleteError}</p>}
+
+      {!editing && <PostActions onEdit={startEdit} onDelete={remove} isDeleting={isDeleting} />}
+    </li>
   );
 }

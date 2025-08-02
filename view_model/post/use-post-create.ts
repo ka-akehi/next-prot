@@ -1,32 +1,27 @@
 'use client';
 
+import { createPost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
-import { createPost } from './post-actions';
+import { useState } from 'react';
 
-export function usePostCreate() {
+export function usePostCreate(userId: string) {
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const submit = useCallback(async () => {
-    if (!content.trim()) {
-      setError('投稿内容が空です');
-      return;
-    }
-
+  const submit = async () => {
     try {
-      const formData = new FormData();
-      formData.append('content', content.trim());
-
-      await createPost(formData);
-      setContent('');
       setError('');
-      router.refresh();
-    } catch (err) {
-      setError((err as Error).message);
+      await createPost({
+        content: content.trim(),
+        userId,
+      });
+      setContent('');
+      router.refresh(); // ✅ 投稿後にリストを再取得
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '投稿に失敗しました');
     }
-  }, [content, router]);
+  };
 
   return {
     content,
