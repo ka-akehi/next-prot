@@ -7,7 +7,7 @@ import { PostActions } from './post-actions';
 import { PostContent } from './post-content';
 import { PostEditor } from './post-editor';
 
-export type PostWithUser = Post & {
+type PostWithUser = Post & {
   user?: {
     name?: string | null;
   };

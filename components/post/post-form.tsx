@@ -1,7 +1,6 @@
 'use client';
 
 import { usePostCreate } from '@/view_model/post/use-post-create';
-import { useEffect } from 'react';
 
 type Props = {
   userId: string;
@@ -10,9 +9,9 @@ type Props = {
 export function PostForm({ userId }: Props) {
   const { content, setContent, error, submit } = usePostCreate(userId);
 
-  useEffect(() => {
-    throw new Error('🧪 Test error for GlobalError');
-  }, []);
+  // useEffect(() => {
+  //   throw new Error('🧪 Test error for GlobalError');
+  // }, []);
 
   return (
     <form
