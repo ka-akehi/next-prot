@@ -3,6 +3,7 @@ import { AuthSessionProvider } from '@/app/providers/session-provider';
 import { ErrorListener } from '@/components/system/error-listener';
 import RegisterServiceWorker from '@/components/todo/RegisterServiceWorker';
 import { Geist, Geist_Mono } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const geistSans = Geist({
@@ -34,6 +35,18 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthSessionProvider>
+          <Script src={`https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX`} strategy="afterInteractive" />
+          <Script id="ga-init" strategy="afterInteractive">
+            {`
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXX', {
+      debug_mode: true,
+      page_path: window.location.pathname,
+    });
+  `}
+          </Script>
           <Header />
           <ErrorListener />
           <RegisterServiceWorker />
