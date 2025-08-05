@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "ws": "tsx server/websocket.ts"
+    "ws": "tsx server/websocket.ts",
+    "test": "jest"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
