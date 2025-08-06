@@ -4,7 +4,12 @@ import { getAuthSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logServerError } from '@/lib/server-log';
 
-export async function createPost({ content, userId }: { content: string; userId: string }) {
+type CreatePostArgs = {
+  content: string;
+  userId: string;
+};
+
+export async function createPost({ content, userId }: CreatePostArgs) {
   try {
     if (!content.trim()) {
       throw new Error('投稿内容が空です');
