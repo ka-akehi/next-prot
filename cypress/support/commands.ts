@@ -35,3 +35,9 @@
 //     }
 //   }
 // }
+
+Cypress.Commands.add('loginAsTestUser', () => {
+  cy.request('GET', '/api/test-login');
+});
+
+export {};

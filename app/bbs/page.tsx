@@ -1,4 +1,3 @@
-import { TestClient } from '@/components/errors/TestClient';
 import { PostForm, PostList } from '@/components/post';
 import { authConfig } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
@@ -26,7 +25,7 @@ export default async function BbsPage() {
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
       <h1 className="text-2xl font-bold">掲示板</h1>
       {/* ClientErrorLogで観測可能なエラー */}
-      <TestClient />
+      {/* <TestClient /> */}
 
       {session?.user ? (
         <PostForm userId={session.user.id} />

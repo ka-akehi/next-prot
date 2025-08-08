@@ -6,6 +6,9 @@ import { prisma } from './prisma';
 
 export const authConfig: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: 'database', // データベースセッション戦略を明示
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

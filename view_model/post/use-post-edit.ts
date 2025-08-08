@@ -9,9 +9,10 @@ export function usePostEdit(postId: string, initialContent: string) {
   const [content, setContent] = useState(initialContent);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter(); // ← ✅ 追加
+  const router = useRouter();
 
   const startEdit = () => setEditing(true);
+
   const cancelEdit = () => {
     setContent(initialContent);
     setEditing(false);

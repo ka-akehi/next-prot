@@ -26,6 +26,14 @@
     "typeRoots": ["./types", "./node_modules/@types"],
     "types": ["jest", "node", "cypress"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.ts", "cypress/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next.config.ts",
+    "cypress/**/*.ts",
+    "cypress/support/index.d.ts"
+  ],
   "exclude": ["node_modules"]
 }

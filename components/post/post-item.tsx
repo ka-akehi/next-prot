@@ -31,21 +31,29 @@ export function PostItem({ post }: Props) {
   } = usePostEdit(post.id, post.content);
 
   return (
-    <li className="relative border p-4 rounded space-y-2">
+    <li className="relative border p-4 rounded space-y-2" data-testid="post-item" data-cy={post.id}>
       {editing ? (
-        <PostEditor
-          content={content}
-          setContent={setContent}
-          save={save}
-          cancel={cancelEdit}
-          loading={isUpdating}
-          error={updateError}
-        />
+        <>
+          <PostEditor
+            content={content}
+            setContent={setContent}
+            save={save}
+            cancel={cancelEdit}
+            loading={isUpdating}
+            error={updateError}
+          />
+        </>
       ) : (
-        <PostContent post={post} />
+        <>
+          <PostContent post={post} />
+        </>
       )}
 
-      {deleteError && <p className="text-red-500 text-sm">{deleteError}</p>}
+      {deleteError && (
+        <p className="text-red-500 text-sm" data-testid="post-error-delete">
+          {deleteError}
+        </p>
+      )}
 
       {!editing && <PostActions onEdit={startEdit} onDelete={remove} isDeleting={isDeleting} />}
     </li>

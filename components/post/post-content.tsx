@@ -1,18 +1,22 @@
-type Props = {
-  post: {
-    content: string;
-    createdAt: Date;
-    user?: { name?: string | null };
+import type { Post } from '@prisma/client';
+
+type PostWithUser = Post & {
+  user?: {
+    name?: string | null;
   };
 };
 
-export function PostContent({ post }: Props) {
+export function PostContent({ post }: { post: PostWithUser }) {
   return (
-    <>
-      <p className="whitespace-pre-wrap">{post.content}</p>
-      <div className="text-xs text-gray-500 mt-1">
-        {post.user?.name || '匿名'} - {new Date(post.createdAt).toLocaleString()}
-      </div>
-    </>
+    <div>
+      <p className="whitespace-pre-wrap" data-testid="post-content">
+        {post.content}
+      </p>
+      {post.user?.name && (
+        <p className="text-xs text-gray-500" data-testid="post-author">
+          by {post.user.name}
+        </p>
+      )}
+    </div>
   );
 }
