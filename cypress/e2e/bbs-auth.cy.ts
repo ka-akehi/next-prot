@@ -1,3 +1,59 @@
+describe('BBS: UI認可（他人の投稿は編集/削除できない）', () => {
+  beforeEach(() => {
+    cy.loginAsTestUser(); // /api/test-login
+    cy.resetData(); // /api/test-reset（テストユーザーの投稿を削除）
+  });
+
+  it('【edit】他人の投稿には編集ボタンが表示されず、本文は変更されない', () => {
+    // 他人の投稿を用意
+    cy.request('POST', '/api/test-seed-other-post', { content: 'should not edit' })
+      .its('body')
+      .then((seed) => {
+        const otherPostId = seed.id as string;
+        const original = seed.content as string;
+
+        cy.visit('/bbs');
+
+        // 対象行があること & 本文確認
+        cy.get(`[data-cy="${otherPostId}"] [data-testid="post-content"]`).should('contain', original);
+
+        // 編集ボタンは表示されない
+        cy.get(`[data-cy="${otherPostId}"] [data-testid="edit-post"]`).should('not.exist');
+
+        // 編集フォームも開けない（存在しないこと）
+        cy.get(`[data-cy="${otherPostId}"] [data-testid="post-edit-form"]`).should('not.exist');
+
+        // 本文は変わっていない
+        cy.get(`[data-cy="${otherPostId}"] [data-testid="post-content"]`).should('contain', original);
+      });
+  });
+
+  it('【delete】他人の投稿には削除ボタンが表示されず、項目は残る', () => {
+    cy.request('POST', '/api/test-seed-other-post', { content: 'should not delete' })
+      .its('body')
+      .then((seed) => {
+        const otherPostId = seed.id as string;
+
+        cy.visit('/bbs');
+
+        // 行が存在する
+        cy.get(`[data-cy="${otherPostId}"]`).should('exist');
+
+        // 削除ボタンは表示されない
+        cy.get(`[data-cy="${otherPostId}"] [data-testid="delete-post"]`).should('not.exist');
+
+        // エラーも当然表示されない（操作不能のため）
+        cy.get(
+          `[data-cy="${otherPostId}"] [data-testid="post-error-delete"], ` +
+            `[data-cy="${otherPostId}"] [data-testid="post-error"]`
+        ).should('not.exist');
+
+        // 行は残っている（削除されていない）
+        cy.get(`[data-cy="${otherPostId}"]`).should('exist');
+      });
+  });
+});
+
 describe('BBS Auth & Navigation & SSR', () => {
   beforeEach(() => {
     cy.resetData();

@@ -7,7 +7,11 @@ export default async function MyPage() {
   const session = await getServerSession(authConfig);
 
   if (!session?.user?.id) {
-    return <div className="p-6 text-center text-sm text-gray-500">このページを見るにはログインしてください。</div>;
+    return (
+      <div className="p-6 text-center text-sm text-gray-500" data-testid="mypage-guest">
+        このページを見るにはログインしてください。
+      </div>
+    );
   }
 
   const posts = await prisma.post.findMany({

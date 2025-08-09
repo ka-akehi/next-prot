@@ -9,6 +9,9 @@ export const authConfig: NextAuthOptions = {
   session: {
     strategy: 'database', // データベースセッション戦略を明示
   },
+  pages: {
+    signIn: '/login', // ← ここを追加
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

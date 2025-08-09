@@ -30,7 +30,9 @@ export default async function BbsPage() {
       {session?.user ? (
         <PostForm userId={session.user.id} />
       ) : (
-        <p className="text-sm text-gray-500 text-center">ログインして投稿できます</p>
+        <p className="text-sm text-gray-500 text-center" data-testid="post-form-gate">
+          ログインして投稿できます
+        </p>
       )}
 
       <PostList posts={posts} />

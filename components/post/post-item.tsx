@@ -3,6 +3,7 @@
 import { usePostDelete } from '@/view_model/post/use-post-delete';
 import { usePostEdit } from '@/view_model/post/use-post-edit';
 import type { Post } from '@prisma/client';
+import { useSession } from 'next-auth/react';
 import { PostActions } from './post-actions';
 import { PostContent } from './post-content';
 import { PostEditor } from './post-editor';
@@ -18,6 +19,10 @@ type Props = {
 };
 
 export function PostItem({ post }: Props) {
+  const { data: session } = useSession();
+  const myId = session?.user?.id as string | undefined;
+  const isMine = !!myId && myId === post.userId;
+
   const { remove, loading: isDeleting, error: deleteError } = usePostDelete(post.id);
   const {
     editing,
@@ -55,7 +60,7 @@ export function PostItem({ post }: Props) {
         </p>
       )}
 
-      {!editing && <PostActions onEdit={startEdit} onDelete={remove} isDeleting={isDeleting} />}
+      {!editing && isMine && <PostActions onEdit={startEdit} onDelete={remove} isDeleting={isDeleting} />}
     </li>
   );
 }
