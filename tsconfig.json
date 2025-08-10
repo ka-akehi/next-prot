@@ -33,7 +33,12 @@
     ".next/types/**/*.ts",
     "next.config.ts",
     "cypress/**/*.ts",
-    "cypress/support/index.d.ts"
+    "cypress/support/index.d.ts",
+    "__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "jest.config.ts",
+    "jest.setup.ts"
   ],
   "exclude": ["node_modules"]
 }

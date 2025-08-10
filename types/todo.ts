@@ -1,4 +1,5 @@
 export type ToDo = {
   id: string;
-  text: string;
+  title: string;
+  createdAt: string;
 };
