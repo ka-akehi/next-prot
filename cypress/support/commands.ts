@@ -35,3 +35,22 @@
 //     }
 //   }
 // }
+
+Cypress.Commands.add('loginAsTestUser', () => {
+  cy.request('GET', '/api/test-login');
+});
+
+Cypress.Commands.add('logout', () => {
+  cy.request('GET', '/api/auth/signout');
+});
+
+Cypress.Commands.add('resetData', () => {
+  // テスト用のデータ初期化API（下で実装）
+  cy.request('POST', '/api/test-reset');
+});
+
+Cypress.Commands.add('getByCy', (value: string) => {
+  return cy.get(`[data-cy="${value}"]`);
+});
+
+export {};
