@@ -30,7 +30,6 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
     "next.config.ts",
     "cypress/**/*.ts",
     "cypress/support/index.d.ts",
@@ -38,7 +37,9 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "jest.config.ts",
-    "jest.setup.ts"
+    "jest.setup.ts",
+    ".next/types/**/*.ts",
+    "types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }
