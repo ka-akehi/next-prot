@@ -1,9 +1,9 @@
 'use client';
 
-import ExportButtonView from '@/components/mypage/ExportButtonView';
 import { useExportViewModel } from '@/view_model/use-export-view-model';
+import ExportButtonView from './ExportButtonView';
 
-export default function ExportButton() {
+export default function ExportButtonContainer() {
   const { job, loading, startExport } = useExportViewModel();
 
   return (

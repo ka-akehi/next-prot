@@ -1,5 +1,3 @@
-'use client';
-
 import ExportResult from './ExportResult';
 import ProgressBar from './ProgressBar';
 
@@ -23,6 +21,7 @@ export default function ExportButtonView({
   return (
     <div className="space-y-3">
       <button
+        type="button"
         onClick={onStartAction}
         disabled={loading || jobStatus === 'processing'}
         className={`px-4 py-2 rounded text-white font-semibold shadow ${

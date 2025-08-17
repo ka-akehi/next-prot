@@ -1,4 +1,4 @@
-import * as ws from 'ws';
+import type WebSocket from 'ws';
 
 export type ExportJobUpdate = {
   type: 'export-progress';
@@ -8,27 +8,37 @@ export type ExportJobUpdate = {
   filePath?: string;
 };
 
-const exportSubscribers = new Map<string, Set<ws.WebSocket>>();
+// global に保存するシングルトンの型
+type ExportSubscribers = Map<string, Set<WebSocket>>;
 
-export function handleExportConnection(socket: ws.WebSocket, jobId: string) {
-  if (!exportSubscribers.has(jobId)) exportSubscribers.set(jobId, new Set());
-  exportSubscribers.get(jobId)!.add(socket);
+// globalThis に型を追加
+declare global {
+  var __exportSubscribers: ExportSubscribers | undefined;
+}
 
-  socket.on('close', () => {
-    exportSubscribers.get(jobId)?.delete(socket);
-    if (exportSubscribers.get(jobId)?.size === 0) {
-      exportSubscribers.delete(jobId);
-    }
+// シングルトン化された exportSubscribersz
+export const exportSubscribers: ExportSubscribers =
+  globalThis.__exportSubscribers ?? (globalThis.__exportSubscribers = new Map());
+
+export function handleExportConnection(ws: WebSocket, jobId: string) {
+  if (!exportSubscribers.has(jobId)) {
+    exportSubscribers.set(jobId, new Set());
+  }
+  exportSubscribers.get(jobId)!.add(ws);
+
+  ws.on('close', () => {
+    exportSubscribers.get(jobId)?.delete(ws);
   });
 }
 
-export function broadcastExport(jobId: string, payload: ExportJobUpdate) {
-  const clients = exportSubscribers.get(jobId);
-  if (!clients) return;
-  const json = JSON.stringify(payload);
-  for (const client of clients) {
-    if (client.readyState === ws.WebSocket.OPEN) {
-      client.send(json);
+export function broadcastExport(jobId: string, update: ExportJobUpdate) {
+  const subs = exportSubscribers.get(jobId);
+  if (!subs || subs.size === 0) {
+    return;
+  }
+  for (const client of subs) {
+    if (client.readyState === client.OPEN) {
+      client.send(JSON.stringify(update));
     }
   }
 }

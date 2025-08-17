@@ -33,7 +33,7 @@ describe('useChat', () => {
   it('WebSocketに接続し、接続時にjoinメッセージを送信できること', () => {
     renderHook(() => useChat('user1', 'room1'));
 
-    expect(global.WebSocket).toHaveBeenCalledWith('ws://localhost:4000?room=room1');
+    expect(global.WebSocket).toHaveBeenCalledWith('ws://localhost:3000?room=room1');
 
     act(() => {
       mockWebSocket.onopen?.({} as Event);

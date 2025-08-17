@@ -1,30 +1,32 @@
-import { handleChatConnection } from '@/server/chat-ws-handler';
-import { handleExportConnection } from '@/server/export-ws-handler';
-import { createServer } from 'http';
+import { handleChatConnection } from '@/server/chat-ws-handler'; // ← chat用ハンドラ（既存）
+import { handleExportConnection } from '@/server/export-ws-handler'; // ← export用のハンドラ
 import { parse } from 'url';
-import * as ws from 'ws';
+import { WebSocketServer } from 'ws';
 
-const server = createServer();
-const wss = new ws.WebSocketServer({ noServer: true });
+// WebSocketサーバーをポート3000で直接起動
+const wss = new WebSocketServer({ port: 3000 });
 
-server.on('upgrade', (req, socket, head) => {
-  const { pathname, query } = parse(req.url || '', true);
+wss.on('connection', (ws, req) => {
+  if (!req.url) return;
 
-  if (pathname === '/chat') {
-    wss.handleUpgrade(req, socket, head, (wsSocket: ws.WebSocket) => {
-      const roomId = typeof query.room === 'string' ? query.room : 'default';
-      handleChatConnection(wsSocket, roomId);
-    });
-  }
+  const { pathname, query } = parse(req.url, true);
 
+  // エクスポート用
   if (pathname === '/export') {
-    wss.handleUpgrade(req, socket, head, (wsSocket: ws.WebSocket) => {
-      const jobId = typeof query.jobId === 'string' ? query.jobId : '';
-      handleExportConnection(wsSocket, jobId);
-    });
+    const jobId = typeof query.jobId === 'string' ? query.jobId : '';
+    handleExportConnection(ws, jobId);
+    return;
   }
+
+  // チャット用
+  if (pathname === '/chat') {
+    const roomId = typeof query.room === 'string' ? query.room : 'default';
+    handleChatConnection(ws, roomId);
+    return;
+  }
+
+  // 未知の接続
+  ws.close();
 });
 
-server.listen(4000, () => {
-  console.log('✅ WebSocket server running on ws://localhost:4000');
-});
+console.log('🚀 WebSocket server running on ws://localhost:3000');

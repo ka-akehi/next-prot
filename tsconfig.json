@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@server/*": ["server/*"],
+      "@lib/*": ["lib/*"]
     },
     "baseUrl": ".",
     "forceConsistentCasingInFileNames": true,

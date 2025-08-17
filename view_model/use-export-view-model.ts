@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { ExportJobUpdate } from '@/server/export-ws-handler';
+import { useEffect, useRef, useState } from 'react';
 
 type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -14,14 +15,22 @@ export function useExportViewModel() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<ExportJob | null>(null);
   const [loading, setLoading] = useState(false);
+  const socketRef = useRef<WebSocket | null>(null);
 
+  // エクスポート開始
   const startExport = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/export', { method: 'POST' });
       if (!res.ok) throw new Error('Export request failed');
       const data = await res.json();
+
       setJobId(data.jobId);
+      setJob({
+        id: data.jobId,
+        status: 'pending',
+        progress: 0,
+      });
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -29,28 +38,44 @@ export function useExportViewModel() {
     }
   };
 
+  // WebSocket で進捗監視
   useEffect(() => {
     if (!jobId) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/export/${jobId}`, {
-          cache: 'no-store',
-        });
-        if (!res.ok) throw new Error('Polling request failed');
-        const data: ExportJob = await res.json();
-        setJob(data);
+    const socket = new WebSocket(`ws://localhost:3000/export?jobId=${encodeURIComponent(jobId)}`);
+    socketRef.current = socket;
 
-        if (data.status === 'completed' || data.status === 'failed') {
-          clearInterval(interval);
-          setLoading(false);
+    socket.onmessage = (event) => {
+      try {
+        const data: ExportJobUpdate = JSON.parse(event.data);
+        if (data.type === 'export-progress' && data.jobId === jobId) {
+          setJob({
+            id: jobId,
+            status: data.status,
+            progress: data.progress,
+            filePath: data.filePath ?? null,
+          });
+          if (data.status === 'completed' || data.status === 'failed') {
+            setLoading(false);
+            socket.close();
+          }
         }
       } catch (err) {
-        console.error(err);
+        console.error('❌ Failed to parse WebSocket message:', err);
       }
-    }, 100);
+    };
 
-    return () => clearInterval(interval);
+    socket.onerror = (err) => {
+      console.error('❌ socket error:', err);
+    };
+
+    socket.onclose = () => {
+      console.log('🔌 Export socket closed');
+    };
+
+    return () => {
+      socket.close();
+    };
   }, [jobId]);
 
   return {

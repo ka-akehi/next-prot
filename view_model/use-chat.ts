@@ -8,7 +8,7 @@ export function useChat(username: string, room: string) {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket(`ws://localhost:4000/chat?room=${encodeURIComponent(room)}`);
+    const socket = new WebSocket(`ws://localhost:3000/chat?room=${encodeURIComponent(room)}`);
     socketRef.current = socket;
 
     socket.onopen = () => {
