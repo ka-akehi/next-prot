@@ -95,3 +95,20 @@ model Todo {
   title     String
   createdAt DateTime @default(now())
 }
+
+enum ExportStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model ExportJob {
+  id         String        @id @default(cuid())
+  status     ExportStatus  @default(pending)
+  filePath   String?
+  error      String?
+  progress   Int           @default(0) // 0〜100%
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}

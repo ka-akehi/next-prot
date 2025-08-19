@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2020",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "commonjs",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -19,12 +19,29 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@server/*": ["server/*"],
+      "@lib/*": ["lib/*"]
     },
     "baseUrl": ".",
+    "forceConsistentCasingInFileNames": true,
     "typeRoots": ["./types", "./node_modules/@types"],
     "types": ["jest", "node", "cypress"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.ts", "cypress/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "next.config.ts",
+    "cypress/**/*.ts",
+    "cypress/support/index.d.ts",
+    "__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "jest.config.ts",
+    "jest.setup.ts",
+    ".next/types/**/*.ts",
+    "types/**/*.d.ts"
+  ],
   "exclude": ["node_modules"]
 }
