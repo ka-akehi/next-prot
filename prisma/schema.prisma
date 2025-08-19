@@ -25,6 +25,10 @@ model User {
   sessions       Session[]
 
   createdAt      DateTime  @default(now())
+
+  // --- 2FA 用フィールド ---
+  twoFactorSecret  String?   // TOTP 用の秘密鍵（base32）
+  twoFactorEnabled Boolean   @default(false) // 2FA 有効化フラグ
 }
 
 model Post {
