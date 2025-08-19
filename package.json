@@ -11,7 +11,7 @@
     "test": "jest",
     "cypress": "cypress open",
     "test:e2e": "start-server-and-test start http://localhost:3000 cypress:run",
-    "prisma:studio": "prisma studio",
+    "prisma": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:deploy": "prisma migrate deploy",
