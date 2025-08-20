@@ -4,10 +4,12 @@ import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from './prisma';
 
+const MAX_2FA_AGE = 1000 * 60 * 60; // 1時間
+
 export const authConfig: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
-    strategy: 'database', // データベースセッション戦略を明示
+    strategy: 'jwt', // JWTセッション戦略を明示
   },
   pages: {
     signIn: '/login', // ← ここを追加
@@ -23,17 +25,35 @@ export const authConfig: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user && user) {
-        session.user.id = user.id;
-      }
-      return session;
-    },
     async jwt({ token, user }) {
-      if (user) {
-        token.email = user.email; // JWTにemailを埋める（sessionで利用）
+      if (user) token.id = user.id;
+
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+        });
+
+        token.twoFactorEnabled = dbUser?.twoFactorEnabled ?? false;
+
+        if (dbUser?.twoFactorEnabled) {
+          const lastAt = dbUser.lastTwoFactorAt?.getTime() ?? 0;
+          const expired = Date.now() - lastAt > MAX_2FA_AGE;
+
+          token.twoFactorVerified = !expired;
+        } else {
+          token.twoFactorVerified = false;
+        }
       }
+
       return token;
+    },
+
+    async session({ session, token }) {
+      session.user.id = token.id as string;
+      session.user.twoFactorEnabled = token.twoFactorEnabled;
+      session.user.twoFactorVerified = token.twoFactorVerified;
+      session.user.twoFactorVerifiedAt = token.twoFactorVerifiedAt;
+      return session;
     },
   },
 };

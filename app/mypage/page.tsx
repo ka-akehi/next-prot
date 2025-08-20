@@ -1,4 +1,5 @@
-import ExportButton from '@/components/mypage/ExportButton';
+import ExportSection from '@/components/mypage/ExportSection';
+import SecuritySection from '@/components/mypage/SecuritySection';
 import { PostList } from '@/components/post';
 import { authConfig } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
@@ -25,11 +26,8 @@ export default async function MyPage() {
     <main className="max-w-xl mx-auto space-y-6 p-4">
       <h1 className="text-2xl font-bold">マイページ</h1>
 
-      {/* CSVエクスポート機能 */}
-      <section className="border p-4 rounded bg-gray-50">
-        <h2 className="text-lg font-semibold mb-2">投稿のCSVエクスポート</h2>
-        <ExportButton />
-      </section>
+      <SecuritySection session={session} />
+      <ExportSection />
 
       {posts.length > 0 ? <PostList posts={posts} /> : <p className="text-gray-500 text-sm">投稿がありません。</p>}
     </main>
