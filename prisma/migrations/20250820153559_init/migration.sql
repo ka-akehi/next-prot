@@ -5,7 +5,10 @@ CREATE TABLE "User" (
     "email" TEXT,
     "emailVerified" DATETIME,
     "image" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "twoFactorSecret" TEXT,
+    "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "lastTwoFactorAt" DATETIME
 );
 
 -- CreateTable
