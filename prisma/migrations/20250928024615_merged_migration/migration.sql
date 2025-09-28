@@ -8,7 +8,10 @@ CREATE TABLE "User" (
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "twoFactorSecret" TEXT,
     "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
-    "lastTwoFactorAt" DATETIME
+    "lastTwoFactorAt" DATETIME,
+    "loginAttempts" INTEGER NOT NULL DEFAULT 0,
+    "isLocked" BOOLEAN NOT NULL DEFAULT false,
+    "lockedUntil" DATETIME
 );
 
 -- CreateTable

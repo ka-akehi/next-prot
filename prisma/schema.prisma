@@ -27,11 +27,14 @@ model User {
   createdAt      DateTime  @default(now())
 
   // --- 2FA 用フィールド ---
-  twoFactorSecret  String?   // TOTP 用の秘密鍵（base32）
-  twoFactorEnabled Boolean   @default(false) // 2FA 有効化フラグ
-
-  // --- 2FA 最終認証時刻 ---
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean   @default(false)
   lastTwoFactorAt  DateTime?
+
+  // --- アカウントロック関連フィールド ---
+  loginAttempts   Int       @default(0)     // 認証失敗回数
+  isLocked        Boolean   @default(false) // 管理者による明示的ロック
+  lockedUntil     DateTime?                // 一時的なロック解除時刻
 }
 
 model Post {
