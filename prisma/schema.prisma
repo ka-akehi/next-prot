@@ -36,6 +36,9 @@ model User {
   loginAttempts   Int       @default(0)     // 認証失敗回数
   isLocked        Boolean   @default(false) // 管理者による明示的ロック
   lockedUntil     DateTime?                // 一時的なロック解除時刻
+
+  passwordSetupToken        String?
+  passwordSetupTokenExpires DateTime?
 }
 
 model Post {

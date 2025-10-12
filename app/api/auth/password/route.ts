@@ -76,6 +76,8 @@ export async function POST(request: Request) {
       data: {
         passwordHash,
         email: user.email ? user.email.toLowerCase() : user.email,
+        passwordSetupToken: null,
+        passwordSetupTokenExpires: null,
       },
     });
 

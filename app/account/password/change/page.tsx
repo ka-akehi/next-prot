@@ -1,12 +1,15 @@
 import { PasswordChangeForm } from '@/app/account/password/_components/PasswordChangeForm';
 
-type PasswordChangePageProps = {
-  searchParams?: { [key: string]: string | string[] | undefined };
+type PasswordChangePageParamsType = {
+  redirect?: string | undefined;
 };
 
-export default function PasswordChangePage({ searchParams }: PasswordChangePageProps) {
-  const redirectParam = searchParams?.redirect;
-  const redirectUrl = typeof redirectParam === 'string' ? redirectParam : undefined;
+type PasswordChangePageProps = {
+  searchParams?: Promise<PasswordChangePageParamsType>;
+};
 
-  return <PasswordChangeForm redirectUrl={redirectUrl} />;
+export default async function PasswordChangePage({ searchParams }: PasswordChangePageProps) {
+  const { redirect } = (await searchParams) ?? {};
+
+  return <PasswordChangeForm redirectUrl={redirect} />;
 }

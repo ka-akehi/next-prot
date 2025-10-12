@@ -15,7 +15,7 @@
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
     "deploy": "prisma migrate deploy",
-    "db:reset": "prisma migrate reset --force"
+    "prisma-reset": "prisma migrate reset --force"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

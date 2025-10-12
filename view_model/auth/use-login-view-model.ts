@@ -34,8 +34,7 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
 
   useEffect(() => {
     if (errorCode?.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
-      const redirectTarget =
-        errorCode.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
+      const redirectTarget = errorCode.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
       router.replace(redirectTarget);
     }
   }, [errorCode, router]);
@@ -68,15 +67,13 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
 
         if (result?.error) {
           if (result.error.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
-            const redirectTarget =
-              result.error.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
+            const redirectTarget = result.error.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
             router.push(redirectTarget);
             setIsSubmitting(false);
             return;
           }
 
-          const mappedMessage =
-            AUTH_ERROR_MESSAGES[result.error as keyof typeof AUTH_ERROR_MESSAGES];
+          const mappedMessage = AUTH_ERROR_MESSAGES[result.error as keyof typeof AUTH_ERROR_MESSAGES];
           const message = mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE;
           setFormError(message);
           setIsSubmitting(false);

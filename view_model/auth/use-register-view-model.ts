@@ -56,8 +56,16 @@ export function useRegisterViewModel({ callbackUrl }: UseRegisterViewModelParams
               typeof data?.redirectTo === 'string' && data.redirectTo
                 ? data.redirectTo
                 : '/account/password/new';
+            const searchParams = new URLSearchParams();
+            searchParams.set('redirect', callbackUrl);
+            if (typeof data?.passwordSetupToken === 'string') {
+              searchParams.set('token', data.passwordSetupToken);
+            }
+            if (typeof data?.email === 'string') {
+              searchParams.set('email', data.email);
+            }
             const separator = baseRedirect.includes('?') ? '&' : '?';
-            const redirectUrl = `${baseRedirect}${separator}redirect=${encodeURIComponent(callbackUrl)}`;
+            const redirectUrl = `${baseRedirect}${separator}${searchParams.toString()}`;
             router.push(redirectUrl);
           }
 

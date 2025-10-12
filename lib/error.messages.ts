@@ -27,6 +27,11 @@ export const PASSWORD_ERROR_MESSAGES = {
   updateFailed: 'パスワードの更新に失敗しました',
   newPasswordRequired: '新しいパスワードと確認用パスワードを入力してください',
   currentInvalid: '現在のパスワードが正しくありません',
+  setupTokenMissing: 'パスワード設定用リンクが無効です。もう一度ログインをお試しください',
+  setupTokenInvalid: 'パスワード設定用リンクが無効です。もう一度ログインをお試しください',
+  setupTokenExpired: 'パスワード設定用リンクの有効期限が切れました。もう一度ログインをお試しください',
+  emailRequired: 'メールアドレスが指定されていません',
+  userIdRequired: 'ユーザーIDが無効です、もう一度ログインをお試しください',
 } as const;
 
 export const PASSWORD_SUCCESS_MESSAGES = {

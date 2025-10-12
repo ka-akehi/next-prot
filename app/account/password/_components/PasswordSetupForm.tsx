@@ -1,18 +1,17 @@
 'use client';
 
 import { PasswordFormLayout } from '@/app/account/password/_components/PasswordFormLayout';
-import { usePasswordManageViewModel } from '@/view_model/auth/use-password-manage-view-model';
+import { usePasswordSetupViewModel } from '@/view_model/auth/use-password-setup-view-model';
 
 type PasswordSetupFormProps = {
+  email?: string;
+  token?: string;
   redirectUrl?: string;
 };
 
-export function PasswordSetupForm({ redirectUrl }: PasswordSetupFormProps) {
+export function PasswordSetupForm({ email, token, redirectUrl }: PasswordSetupFormProps) {
   const { password, setPassword, confirmPassword, setConfirmPassword, error, success, isSubmitting, handleSubmit } =
-    usePasswordManageViewModel({
-      onSuccessRedirectUrl: redirectUrl,
-      successMessage: 'パスワードを設定しました',
-    });
+    usePasswordSetupViewModel({ email, token, redirectUrl });
 
   return (
     <PasswordFormLayout

@@ -1,4 +1,5 @@
 import { PASSWORD_ERROR_MESSAGES, REGISTER_ERROR_MESSAGES } from '@/lib/error.messages';
+import { issuePasswordSetupToken } from '@/lib/password-token';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { hash } from 'bcryptjs';
@@ -74,10 +75,13 @@ export async function POST(request: Request) {
     }
 
     if (existingUser) {
+      const { token } = await issuePasswordSetupToken(existingUser.id);
       return NextResponse.json(
         {
           error: REGISTER_ERROR_MESSAGES.requirePasswordSetup,
           redirectTo: '/account/password/new',
+          passwordSetupToken: token,
+          email: normalizedEmail,
         },
         { status: 409 }
       );

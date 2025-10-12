@@ -1,4 +1,5 @@
 import { AUTH_ERROR_CODES, createPasswordRequiredError } from '@/lib/auth.errors';
+import { issuePasswordSetupToken } from '@/lib/password-token';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { compare } from 'bcryptjs';
 import { type NextAuthOptions } from 'next-auth';
@@ -52,11 +53,11 @@ export const authConfig: NextAuthOptions = {
         }
 
         if (!user?.passwordHash) {
-          throw new Error(
-            createPasswordRequiredError(
-              `/account/password/new?redirect=${encodeURIComponent(callbackUrl)}`
-            )
-          );
+          const { token } = await issuePasswordSetupToken(user?.id);
+          const setupUrl = `/account/password/new?redirect=${encodeURIComponent(
+            callbackUrl
+          )}&token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
+          throw new Error(createPasswordRequiredError(setupUrl));
         }
 
         if (user.isLocked) {

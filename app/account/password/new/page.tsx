@@ -1,12 +1,17 @@
 import { PasswordSetupForm } from '@/app/account/password/_components/PasswordSetupForm';
 
-type PasswordSetupPageProps = {
-  searchParams?: { [key: string]: string | string[] | undefined };
+type PasswordSetupPageParamsType = {
+  redirect?: string | undefined;
+  token?: string | undefined;
+  email?: string | undefined;
 };
 
-export default function PasswordSetupPage({ searchParams }: PasswordSetupPageProps) {
-  const redirectParam = searchParams?.redirect;
-  const redirectUrl = typeof redirectParam === 'string' ? redirectParam : undefined;
+type PasswordSetupPageProps = {
+  searchParams?: Promise<PasswordSetupPageParamsType>;
+};
 
-  return <PasswordSetupForm redirectUrl={redirectUrl} />;
+export default async function PasswordSetupPage({ searchParams }: PasswordSetupPageProps) {
+  const { redirect, token, email } = (await searchParams) ?? {};
+
+  return <PasswordSetupForm email={email} token={token} redirectUrl={redirect} />;
 }
