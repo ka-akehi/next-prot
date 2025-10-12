@@ -1,5 +1,6 @@
 'use client';
 
+import { GENERAL_ERROR_MESSAGES } from '@/lib/error.messages';
 import { useState } from 'react';
 
 type WeatherResponse = {
@@ -41,9 +42,9 @@ export default function WeatherPage() {
       setResult(data);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError(err.message || GENERAL_ERROR_MESSAGES.unknown);
       } else {
-        setError('不明なエラーが発生しました');
+        setError(GENERAL_ERROR_MESSAGES.unknown);
       }
     }
 

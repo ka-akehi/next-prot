@@ -1,3 +1,4 @@
+import { EXPORT_ERROR_MESSAGES } from '@/lib/error.messages';
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
@@ -22,7 +23,7 @@ export async function GET(_: Request, context: Params) {
   });
 
   if (!job) {
-    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    return NextResponse.json({ error: EXPORT_ERROR_MESSAGES.jobNotFound }, { status: 404 });
   }
 
   return NextResponse.json(job, {

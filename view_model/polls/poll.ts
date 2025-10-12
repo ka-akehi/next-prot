@@ -1,5 +1,6 @@
 'use client';
 
+import { POLL_ERROR_MESSAGES } from '@/lib/error.messages';
 import { Poll, fetchPoll, vote } from '@/models/polls/poll';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +16,7 @@ export function usePollViewModel() {
         const data = await fetchPoll();
         setPoll(data);
       } catch {
-        setError('投票データの取得に失敗しました');
+        setError(POLL_ERROR_MESSAGES.fetchFailed);
       }
     })();
   }, []);
@@ -27,7 +28,7 @@ export function usePollViewModel() {
       const data = await vote(optionId);
       setPoll(data);
     } catch {
-      setError('投票に失敗しました');
+      setError(POLL_ERROR_MESSAGES.voteFailed);
     } finally {
       setLoading(false);
     }

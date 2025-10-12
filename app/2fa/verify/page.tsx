@@ -1,5 +1,6 @@
 'use client';
 
+import { GENERAL_ERROR_MESSAGES, TWO_FACTOR_ERROR_MESSAGES } from '@/lib/error.messages';
 import { useState } from 'react';
 
 export default function TwoFAVerifyPage() {
@@ -29,10 +30,10 @@ export default function TwoFAVerifyPage() {
         // そのままリダイレクト
         window.location.href = '/bbs';
       } else {
-        setError(data.error ?? '❌ 認証コードが正しくありません');
+        setError(data.error ?? TWO_FACTOR_ERROR_MESSAGES.invalidCode);
       }
     } catch {
-      setError('サーバーエラーが発生しました');
+      setError(GENERAL_ERROR_MESSAGES.server);
     } finally {
       setLoading(false);
       setCode('');

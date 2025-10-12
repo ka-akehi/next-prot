@@ -1,5 +1,6 @@
 'use server';
 
+import { POST_ERROR_MESSAGES } from '@/lib/error.messages';
 import { prisma } from '@/lib/prisma';
 import { logServerError } from '@/lib/server-log';
 
@@ -14,6 +15,6 @@ export async function createPost(content: string) {
     return post;
   } catch (error) {
     await logServerError(error, 'createPost');
-    throw new Error('投稿作成中にエラーが発生しました');
+    throw new Error(POST_ERROR_MESSAGES.createFailed);
   }
 }

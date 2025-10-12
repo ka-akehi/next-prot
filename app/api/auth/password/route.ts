@@ -1,4 +1,9 @@
 import { authConfig } from '@/lib/auth.config';
+import {
+  AUTH_API_ERROR_MESSAGES,
+  GENERAL_ERROR_MESSAGES,
+  PASSWORD_ERROR_MESSAGES,
+} from '@/lib/error.messages';
 import { prisma } from '@/lib/prisma';
 import { compare, hash } from 'bcryptjs';
 import { getServerSession } from 'next-auth';
@@ -9,7 +14,7 @@ const MIN_PASSWORD_LENGTH = 8;
 export async function POST(request: Request) {
   const session = await getServerSession(authConfig);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: GENERAL_ERROR_MESSAGES.authRequired }, { status: 401 });
   }
 
   try {
@@ -22,21 +27,21 @@ export async function POST(request: Request) {
 
     if (!password || !confirmPassword) {
       return NextResponse.json(
-        { error: '新しいパスワードと確認用パスワードを入力してください' },
+        { error: PASSWORD_ERROR_MESSAGES.newPasswordRequired },
         { status: 400 }
       );
     }
 
     if (password !== confirmPassword) {
       return NextResponse.json(
-        { error: 'パスワードと確認用パスワードが一致しません' },
+        { error: PASSWORD_ERROR_MESSAGES.mismatch },
         { status: 400 }
       );
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json(
-        { error: `パスワードは${MIN_PASSWORD_LENGTH}文字以上で設定してください` },
+        { error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) },
         { status: 400 }
       );
     }
@@ -44,13 +49,13 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: AUTH_API_ERROR_MESSAGES.userNotFound }, { status: 404 });
     }
 
     if (user.passwordHash) {
       if (!currentPassword) {
         return NextResponse.json(
-          { error: '現在のパスワードを入力してください' },
+          { error: PASSWORD_ERROR_MESSAGES.currentRequired },
           { status: 400 }
         );
       }
@@ -58,7 +63,7 @@ export async function POST(request: Request) {
       const isCurrentValid = await compare(currentPassword, user.passwordHash);
       if (!isCurrentValid) {
         return NextResponse.json(
-          { error: '現在のパスワードが正しくありません' },
+          { error: PASSWORD_ERROR_MESSAGES.currentInvalid },
           { status: 400 }
         );
       }
@@ -78,7 +83,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[password] unexpected error', error);
     return NextResponse.json(
-      { error: 'パスワードの更新に失敗しました' },
+      { error: PASSWORD_ERROR_MESSAGES.updateFailed },
       { status: 500 }
     );
   }

@@ -1,4 +1,5 @@
 import { authConfig } from '@/lib/auth.config';
+import { AUTH_API_ERROR_MESSAGES } from '@/lib/error.messages';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
@@ -14,7 +15,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        error: { code: 'UNAUTHORIZED', message: 'login required' },
+        error: { code: 'UNAUTHORIZED', message: AUTH_API_ERROR_MESSAGES.loginRequired },
       },
       { status: 401 }
     );

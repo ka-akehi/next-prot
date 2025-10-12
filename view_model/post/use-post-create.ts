@@ -1,5 +1,6 @@
 'use client';
 
+import { POST_ERROR_MESSAGES } from '@/lib/error.messages';
 import { createPost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -19,7 +20,7 @@ export function usePostCreate(userId: string) {
       setContent('');
       router.refresh(); // ✅ 投稿後にリストを再取得
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '投稿に失敗しました');
+      setError(err instanceof Error ? err.message : POST_ERROR_MESSAGES.createFallback);
     }
   };
 

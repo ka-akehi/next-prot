@@ -1,5 +1,6 @@
 'use client';
 
+import { POST_ERROR_MESSAGES } from '@/lib/error.messages';
 import { updatePost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -21,7 +22,7 @@ export function usePostEdit(postId: string, initialContent: string) {
 
   const save = useCallback(async () => {
     if (!content.trim()) {
-      setError('投稿内容を入力してください');
+      setError(POST_ERROR_MESSAGES.validationRequired);
       return;
     }
 
@@ -33,7 +34,7 @@ export function usePostEdit(postId: string, initialContent: string) {
       setError(null);
     } catch (err: unknown) {
       console.error(err);
-      setError('投稿の更新に失敗しました');
+      setError(POST_ERROR_MESSAGES.updateFailed);
     } finally {
       setLoading(false);
     }

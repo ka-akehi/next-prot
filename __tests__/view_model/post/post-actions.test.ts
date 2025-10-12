@@ -1,4 +1,5 @@
 import { getAuthSession } from '@/lib/auth';
+import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@/lib/error.messages';
 import { prisma } from '@/lib/prisma';
 import { createPost, deletePost, updatePost } from '@/view_model/post/post-actions';
 import { describe, expect } from '@jest/globals';
@@ -42,7 +43,7 @@ describe('createPost', () => {
     prisma.post.create = jest.fn().mockRejectedValueOnce(new Error('DBエラー'));
 
     await expect(createPost({ content: '失敗投稿', userId: 'user-123' })).rejects.toThrow(
-      '投稿作成中にエラーが発生しました'
+      POST_ERROR_MESSAGES.createFailed
     );
 
     // prisma.post.create が呼び出されたことを検証
@@ -66,7 +67,7 @@ describe('deletePost', () => {
     // getAuthSession を未ログイン状態にモック
     (getAuthSession as jest.Mock).mockResolvedValueOnce(null);
 
-    await expect(deletePost('post-123')).rejects.toThrow('ログインが必要です');
+    await expect(deletePost('post-123')).rejects.toThrow(GENERAL_ERROR_MESSAGES.authRequired);
   });
 
   it('削除権限がない場合に例外をスローする', async () => {
@@ -78,7 +79,7 @@ describe('deletePost', () => {
     // prisma.post.findUnique をモック
     prisma.post.findUnique = jest.fn().mockResolvedValueOnce(mockPost);
 
-    await expect(deletePost('post-123')).rejects.toThrow('削除権限がありません');
+    await expect(deletePost('post-123')).rejects.toThrow(POST_ERROR_MESSAGES.deleteUnauthorized);
   });
 
   it('正常に投稿を削除できる', async () => {
@@ -109,7 +110,9 @@ describe('updatePost', () => {
     // getAuthSession を未ログイン状態にモック
     (getAuthSession as jest.Mock).mockResolvedValueOnce(null);
 
-    await expect(updatePost('post-123', '新しい内容')).rejects.toThrow('ログインが必要です');
+    await expect(updatePost('post-123', '新しい内容')).rejects.toThrow(
+      GENERAL_ERROR_MESSAGES.authRequired
+    );
   });
 
   it('編集権限がない場合に例外をスローする', async () => {
@@ -121,7 +124,9 @@ describe('updatePost', () => {
     // prisma.post.findUnique をモック
     prisma.post.findUnique = jest.fn().mockResolvedValueOnce(mockPost);
 
-    await expect(updatePost('post-123', '新しい内容')).rejects.toThrow('編集権限がありません');
+    await expect(updatePost('post-123', '新しい内容')).rejects.toThrow(
+      POST_ERROR_MESSAGES.updateUnauthorized
+    );
   });
 
   it('正常に投稿を更新できる', async () => {

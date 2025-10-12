@@ -1,3 +1,4 @@
+import { PASSWORD_ERROR_MESSAGES, REGISTER_ERROR_MESSAGES } from '@/lib/error.messages';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { hash } from 'bcryptjs';
@@ -22,21 +23,21 @@ export async function POST(request: Request) {
 
     if (!emailInput || !password) {
       return NextResponse.json(
-        { error: 'メールアドレスとパスワードは必須です' },
+        { error: REGISTER_ERROR_MESSAGES.credentialsRequired },
         { status: 400 }
       );
     }
 
     if (!EMAIL_REGEX.test(emailInput)) {
       return NextResponse.json(
-        { error: 'メールアドレスの形式が正しくありません' },
+        { error: REGISTER_ERROR_MESSAGES.invalidEmail },
         { status: 400 }
       );
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json(
-        { error: `パスワードは${MIN_PASSWORD_LENGTH}文字以上で設定してください` },
+        { error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) },
         { status: 400 }
       );
     }
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
 
     if (existingUser?.passwordHash) {
       return NextResponse.json(
-        { error: 'このメールアドレスはすでに登録されています' },
+        { error: REGISTER_ERROR_MESSAGES.alreadyRegistered },
         { status: 409 }
       );
     }
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     if (existingUser) {
       return NextResponse.json(
         {
-          error: 'このメールアドレスはすでに登録されています。パスワードを設定してください。',
+          error: REGISTER_ERROR_MESSAGES.requirePasswordSetup,
           redirectTo: '/account/password/new',
         },
         { status: 409 }
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('[register] unexpected error', error);
     return NextResponse.json(
-      { error: 'ユーザー登録中に問題が発生しました' },
+      { error: REGISTER_ERROR_MESSAGES.unexpected },
       { status: 500 }
     );
   }

@@ -1,5 +1,6 @@
 'use client';
 
+import { POST_ERROR_MESSAGES } from '@/lib/error.messages';
 import { deletePost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -16,7 +17,7 @@ export function usePostDelete(postId: string) {
       router.refresh(); // ✅ 削除後に一覧を再取得
     } catch (err: unknown) {
       console.error(err);
-      setError('削除に失敗しました');
+      setError(POST_ERROR_MESSAGES.deleteFailed);
     } finally {
       setLoading(false);
     }

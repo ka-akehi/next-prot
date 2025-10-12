@@ -1,6 +1,7 @@
 'use server';
 
 import { getAuthSession } from '@/lib/auth';
+import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@/lib/error.messages';
 import { prisma } from '@/lib/prisma';
 import { logServerError } from '@/lib/server-log';
 
@@ -12,7 +13,7 @@ type CreatePostArgs = {
 export async function createPost({ content, userId }: CreatePostArgs) {
   try {
     if (!content.trim()) {
-      throw new Error('投稿内容が空です');
+      throw new Error(POST_ERROR_MESSAGES.emptyContent);
     }
 
     const post = await prisma.post.create({
@@ -24,14 +25,14 @@ export async function createPost({ content, userId }: CreatePostArgs) {
     return post;
   } catch (error) {
     await logServerError(error, 'createPost');
-    throw new Error('投稿作成中にエラーが発生しました');
+    throw new Error(POST_ERROR_MESSAGES.createFailed);
   }
 }
 
 export async function deletePost(postId: string) {
   const session = await getAuthSession();
   if (!session?.user?.id) {
-    throw new Error('ログインが必要です');
+    throw new Error(GENERAL_ERROR_MESSAGES.authRequired);
   }
 
   const post = await prisma.post.findUnique({
@@ -40,7 +41,7 @@ export async function deletePost(postId: string) {
   });
 
   if (!post || post.userId !== session.user.id) {
-    throw new Error('削除権限がありません');
+    throw new Error(POST_ERROR_MESSAGES.deleteUnauthorized);
   }
 
   await prisma.post.delete({ where: { id: postId } });
@@ -49,7 +50,7 @@ export async function deletePost(postId: string) {
 export async function updatePost(postId: string, newContent: string) {
   const session = await getAuthSession();
   if (!session?.user?.id) {
-    throw new Error('ログインが必要です');
+    throw new Error(GENERAL_ERROR_MESSAGES.authRequired);
   }
 
   const post = await prisma.post.findUnique({
@@ -58,7 +59,7 @@ export async function updatePost(postId: string, newContent: string) {
   });
 
   if (!post || post.userId !== session.user.id) {
-    throw new Error('編集権限がありません');
+    throw new Error(POST_ERROR_MESSAGES.updateUnauthorized);
   }
 
   await prisma.post.update({

@@ -25,20 +25,38 @@ export const PASSWORD_ERROR_MESSAGES = {
   mismatch: 'パスワードと確認用パスワードが一致しません',
   currentRequired: '現在のパスワードを入力してください',
   updateFailed: 'パスワードの更新に失敗しました',
-};
+  newPasswordRequired: '新しいパスワードと確認用パスワードを入力してください',
+  currentInvalid: '現在のパスワードが正しくありません',
+} as const;
 
 export const PASSWORD_SUCCESS_MESSAGES = {
   updated: 'パスワードを更新しました',
-};
+} as const;
 
 export const REGISTER_ERROR_MESSAGES = {
   failed: '登録に失敗しました',
-};
+  credentialsRequired: 'メールアドレスとパスワードは必須です',
+  invalidEmail: 'メールアドレスの形式が正しくありません',
+  alreadyRegistered: 'このメールアドレスはすでに登録されています',
+  requirePasswordSetup: 'このメールアドレスはすでに登録されています。パスワードを設定してください。',
+  unexpected: 'ユーザー登録中に問題が発生しました',
+} as const;
 
 export const REGISTER_SUCCESS_MESSAGES = {
   completed: '登録が完了しました。自動的にログインします。',
-};
+} as const;
 
 export const TWO_FACTOR_ERROR_MESSAGES = {
   invalidCode: '❌ 認証コードが正しくありません',
-};
+  authenticationRequired: '認証が必要です',
+} as const;
+
+export const AUTH_API_ERROR_MESSAGES = {
+  unauthorized: 'Unauthorized',
+  userNotFound: 'User not found',
+  loginRequired: 'login required',
+} as const;
+
+export const EXPORT_ERROR_MESSAGES = {
+  jobNotFound: 'Job not found',
+} as const;
