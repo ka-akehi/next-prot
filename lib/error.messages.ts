@@ -32,6 +32,8 @@ export const PASSWORD_ERROR_MESSAGES = {
   setupTokenExpired: 'パスワード設定用リンクの有効期限が切れました。もう一度ログインをお試しください',
   emailRequired: 'メールアドレスが指定されていません',
   userIdRequired: 'ユーザーIDが無効です、もう一度ログインをお試しください',
+  complexity:
+    '英字(大文字・小文字)、数字、記号(@,./?!<>_-^~¥[]{};:+*)をそれぞれ1文字以上含めてください',
 } as const;
 
 export const PASSWORD_SUCCESS_MESSAGES = {

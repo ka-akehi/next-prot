@@ -4,11 +4,10 @@ import {
   REGISTER_ERROR_MESSAGES,
   REGISTER_SUCCESS_MESSAGES,
 } from '@/lib/error.messages';
+import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useCallback, useState } from 'react';
-
-const MIN_PASSWORD_LENGTH = 8;
 
 type UseRegisterViewModelParams = {
   callbackUrl: string;
@@ -33,6 +32,11 @@ export function useRegisterViewModel({ callbackUrl }: UseRegisterViewModelParams
 
       if (password.length < MIN_PASSWORD_LENGTH) {
         setError(PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH));
+        return;
+      }
+
+      if (!isPasswordComplex(password)) {
+        setError(PASSWORD_ERROR_MESSAGES.complexity);
         return;
       }
 

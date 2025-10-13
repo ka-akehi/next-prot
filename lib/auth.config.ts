@@ -9,6 +9,8 @@ import GoogleProvider from 'next-auth/providers/google';
 import { prisma } from './prisma';
 
 const MAX_2FA_AGE = 1000 * 60 * 60; // 1時間
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const ACCOUNT_LOCK_DURATION_MS = 1000 * 60 * 15; // 15分
 
 export const authConfig: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -56,16 +58,19 @@ export const authConfig: NextAuthOptions = {
           throw new Error(AUTH_ERROR_CODES.InvalidCredentials);
         }
 
+        if (user.lockedUntil && user.lockedUntil <= new Date()) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { lockedUntil: null, loginAttempts: 0 },
+          });
+        }
+
         if (!user.passwordHash) {
           const { token } = await issuePasswordSetupToken(user.id);
           const setupUrl = `/account/password/new?redirect=${encodeURIComponent(
             callbackUrl
           )}&token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;
           throw new Error(createPasswordRequiredError(setupUrl));
-        }
-
-        if (user.isLocked) {
-          throw new Error(AUTH_ERROR_CODES.AccountLocked);
         }
 
         if (user.lockedUntil && user.lockedUntil > new Date()) {
@@ -75,6 +80,25 @@ export const authConfig: NextAuthOptions = {
         const isValid = await compare(password, user.passwordHash);
 
         if (!isValid) {
+          const nextAttempts = user.loginAttempts + 1;
+
+          if (nextAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+            const lockExpiresAt = new Date(Date.now() + ACCOUNT_LOCK_DURATION_MS);
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                loginAttempts: 0,
+                lockedUntil: lockExpiresAt,
+              },
+            });
+            throw new Error(AUTH_ERROR_CODES.AccountTemporarilyLocked);
+          }
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { loginAttempts: nextAttempts },
+          });
+
           throw new Error(AUTH_ERROR_CODES.InvalidCredentials);
         }
 

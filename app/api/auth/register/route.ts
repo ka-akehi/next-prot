@@ -1,11 +1,11 @@
 import { PASSWORD_ERROR_MESSAGES, REGISTER_ERROR_MESSAGES } from '@/lib/error.messages';
 import { issuePasswordSetupToken } from '@/lib/password-token';
+import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 
-const MIN_PASSWORD_LENGTH = 8;
 const EMAIL_REGEX = new RegExp(
   [
     "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+",
@@ -32,6 +32,10 @@ export async function POST(request: Request) {
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) }, { status: 400 });
+    }
+
+    if (!isPasswordComplex(password)) {
+      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase();

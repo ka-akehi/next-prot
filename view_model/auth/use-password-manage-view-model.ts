@@ -1,8 +1,7 @@
 import { PASSWORD_ERROR_MESSAGES, PASSWORD_SUCCESS_MESSAGES } from '@/lib/error.messages';
+import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
-
-const MIN_PASSWORD_LENGTH = 8;
 
 type UsePasswordManageViewModelParams = {
   onSuccessRedirectUrl?: string;
@@ -29,6 +28,11 @@ export function usePasswordManageViewModel({
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH));
+      return;
+    }
+
+    if (!isPasswordComplex(password)) {
+      setError(PASSWORD_ERROR_MESSAGES.complexity);
       return;
     }
 

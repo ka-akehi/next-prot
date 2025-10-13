@@ -4,12 +4,11 @@ import {
   GENERAL_ERROR_MESSAGES,
   PASSWORD_ERROR_MESSAGES,
 } from '@/lib/error.messages';
+import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
 import { prisma } from '@/lib/prisma';
 import { compare, hash } from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authConfig);
@@ -44,6 +43,10 @@ export async function POST(request: Request) {
         { error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) },
         { status: 400 }
       );
+    }
+
+    if (!isPasswordComplex(password)) {
+      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
