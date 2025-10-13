@@ -33,7 +33,6 @@ export default function RegisterPage() {
           </label>
           <input
             id="name"
-            name="name"
             type="text"
             value={name}
             onChange={(event) => setName(event.target.value)}
@@ -47,7 +46,6 @@ export default function RegisterPage() {
           </label>
           <input
             id="email"
-            name="email"
             type="email"
             autoComplete="email"
             required
@@ -63,7 +61,6 @@ export default function RegisterPage() {
           </label>
           <input
             id="password"
-            name="password"
             type="password"
             autoComplete="new-password"
             required

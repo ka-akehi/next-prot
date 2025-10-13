@@ -2,7 +2,7 @@ import { AUTH_ERROR_MESSAGES, DEFAULT_AUTH_ERROR_MESSAGE } from '@/lib/auth.erro
 import { PASSWORD_ERROR_MESSAGES, PASSWORD_SUCCESS_MESSAGES } from '@/lib/error.messages';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -20,82 +20,76 @@ export function usePasswordSetupViewModel({ email, token, redirectUrl }: UsePass
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
+  const handleSubmit = useCallback(async () => {
+    if (!token) {
+      setError(PASSWORD_ERROR_MESSAGES.setupTokenMissing);
+      return;
+    }
 
-      if (!token) {
-        setError(PASSWORD_ERROR_MESSAGES.setupTokenMissing);
-        return;
-      }
+    if (!email) {
+      setError(PASSWORD_ERROR_MESSAGES.emailRequired);
+      return;
+    }
 
-      if (!email) {
-        setError(PASSWORD_ERROR_MESSAGES.emailRequired);
-        return;
-      }
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH));
+      return;
+    }
 
-      setError(null);
-      setSuccess(null);
+    if (password !== confirmPassword) {
+      setError(PASSWORD_ERROR_MESSAGES.mismatch);
+      return;
+    }
 
-      if (password.length < MIN_PASSWORD_LENGTH) {
-        setError(PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH));
-        return;
-      }
+    setError(null);
+    setSuccess(null);
+    setIsSubmitting(true);
 
-      if (password !== confirmPassword) {
-        setError(PASSWORD_ERROR_MESSAGES.mismatch);
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
-        const response = await fetch('/api/auth/password/setup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            password,
-            confirmPassword,
-            token,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data?.error ?? PASSWORD_ERROR_MESSAGES.updateFailed);
-          setIsSubmitting(false);
-          return;
-        }
-
-        setSuccess(PASSWORD_SUCCESS_MESSAGES.updated);
-
-        const callbackUrl = redirectUrl ?? '/bbs';
-        const signInResult = await signIn('credentials', {
-          redirect: false,
+    try {
+      const response = await fetch('/api/auth/password/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email,
           password,
-          callbackUrl,
-        });
+          confirmPassword,
+          token,
+        }),
+      });
 
-        if (signInResult?.error) {
-          const mappedMessage = AUTH_ERROR_MESSAGES[signInResult.error as keyof typeof AUTH_ERROR_MESSAGES];
-          setError(mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE);
-          setIsSubmitting(false);
-          return;
-        }
+      const data = await response.json();
 
+      if (!response.ok) {
+        setError(data?.error ?? PASSWORD_ERROR_MESSAGES.updateFailed);
         setIsSubmitting(false);
-        router.push(signInResult?.url ?? callbackUrl);
-      } catch (err) {
-        console.error('[password-setup] unexpected error', err);
-        setError(PASSWORD_ERROR_MESSAGES.updateFailed);
-        setIsSubmitting(false);
+        return;
       }
-    },
-    [confirmPassword, email, password, redirectUrl, router, token]
-  );
+
+      setSuccess(PASSWORD_SUCCESS_MESSAGES.updated);
+
+      const callbackUrl = redirectUrl ?? '/bbs';
+      const signInResult = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+        callbackUrl,
+      });
+
+      if (signInResult?.error) {
+        const mappedMessage = AUTH_ERROR_MESSAGES[signInResult.error as keyof typeof AUTH_ERROR_MESSAGES];
+        setError(mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE);
+        setIsSubmitting(false);
+        return;
+      }
+
+      setIsSubmitting(false);
+      router.push(signInResult?.url ?? callbackUrl);
+    } catch (err) {
+      console.error('[password-setup] unexpected error', err);
+      setError(PASSWORD_ERROR_MESSAGES.updateFailed);
+      setIsSubmitting(false);
+    }
+  }, [confirmPassword, email, password, redirectUrl, router, token]);
 
   return {
     password,

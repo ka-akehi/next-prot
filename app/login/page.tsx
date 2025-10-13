@@ -19,48 +19,47 @@ export default function LoginPage() {
       <h1 className="mb-6 text-2xl font-bold">ログイン</h1>
 
       <div className="w-full max-w-sm space-y-4">
-        <form onSubmit={handleCredentialsLogin} className="space-y-3" noValidate>
-          <div>
-            <label className="block text-sm font-medium text-gray-700" htmlFor="email">
-              メールアドレス
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700" htmlFor="email">
+            メールアドレス
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700" htmlFor="password">
-              パスワード
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700" htmlFor="password">
+            パスワード
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
 
-          {formError && <p className="text-sm text-red-600">{formError}</p>}
+        {formError && <p className="text-sm text-red-600">{formError}</p>}
 
-          <button
-            type="submit"
-            className="w-full rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
-            disabled={isSubmitting}
-            data-testid="login-credentials"
-          >
-            {isSubmitting ? 'ログイン中...' : 'ID/PWでログイン'}
-          </button>
-        </form>
+        <button
+          type="button"
+          className="w-full rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
+          disabled={isSubmitting}
+          data-testid="login-credentials"
+          onClick={() => handleCredentialsLogin()}
+        >
+          {isSubmitting ? 'ログイン中...' : 'ID/PWでログイン'}
+        </button>
 
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <span className="flex-1 border-b" />

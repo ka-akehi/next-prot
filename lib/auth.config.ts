@@ -52,8 +52,12 @@ export const authConfig: NextAuthOptions = {
           });
         }
 
-        if (!user?.passwordHash) {
-          const { token } = await issuePasswordSetupToken(user?.id);
+        if (!user) {
+          throw new Error(AUTH_ERROR_CODES.InvalidCredentials);
+        }
+
+        if (!user.passwordHash) {
+          const { token } = await issuePasswordSetupToken(user.id);
           const setupUrl = `/account/password/new?redirect=${encodeURIComponent(
             callbackUrl
           )}&token=${encodeURIComponent(token)}&email=${encodeURIComponent(normalizedEmail)}`;

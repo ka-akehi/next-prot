@@ -8,10 +8,10 @@ const MIN_PASSWORD_LENGTH = 8;
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const rawEmail = typeof body.email === 'string' ? body.email.trim() : '';
-    const password = typeof body.password === 'string' ? body.password : '';
-    const confirmPassword = typeof body.confirmPassword === 'string' ? body.confirmPassword : '';
-    const token = typeof body.token === 'string' ? body.token : '';
+    const rawEmail = !!body.email ? body.email.trim() : '';
+    const password = !!body.password ? body.password : '';
+    const confirmPassword = !!body.confirmPassword ? body.confirmPassword : '';
+    const token = !!body.token ? body.token : '';
 
     if (!rawEmail) {
       return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.emailRequired }, { status: 400 });

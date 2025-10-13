@@ -1,6 +1,6 @@
 import { PASSWORD_ERROR_MESSAGES, PASSWORD_SUCCESS_MESSAGES } from '@/lib/error.messages';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -23,66 +23,70 @@ export function usePasswordManageViewModel({
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      setError(null);
-      setSuccess(null);
+  const handleSubmit = useCallback(async () => {
+    setError(null);
+    setSuccess(null);
 
-      if (password.length < MIN_PASSWORD_LENGTH) {
-        setError(PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH));
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH));
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError(PASSWORD_ERROR_MESSAGES.mismatch);
+      return;
+    }
+
+    if (requireCurrentPassword && !currentPassword) {
+      setError(PASSWORD_ERROR_MESSAGES.currentRequired);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: currentPassword || undefined,
+          password,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error ?? PASSWORD_ERROR_MESSAGES.updateFailed);
         return;
       }
 
-      if (password !== confirmPassword) {
-        setError(PASSWORD_ERROR_MESSAGES.mismatch);
+      setSuccess(successMessage ?? PASSWORD_SUCCESS_MESSAGES.updated);
+
+      if (onSuccessRedirectUrl) {
+        router.push(onSuccessRedirectUrl);
         return;
       }
 
-      if (requireCurrentPassword && !currentPassword) {
-        setError(PASSWORD_ERROR_MESSAGES.currentRequired);
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
-        const response = await fetch('/api/auth/password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentPassword: currentPassword || undefined,
-            password,
-            confirmPassword,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data?.error ?? PASSWORD_ERROR_MESSAGES.updateFailed);
-          return;
-        }
-
-        setSuccess(successMessage ?? PASSWORD_SUCCESS_MESSAGES.updated);
-
-        if (onSuccessRedirectUrl) {
-          router.push(onSuccessRedirectUrl);
-          return;
-        }
-
-        setCurrentPassword('');
-        setPassword('');
-        setConfirmPassword('');
-      } catch (err) {
-        console.error('[password-manage] unexpected error', err);
-        setError(PASSWORD_ERROR_MESSAGES.updateFailed);
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [confirmPassword, currentPassword, onSuccessRedirectUrl, password, requireCurrentPassword, router, successMessage]
-  );
+      setCurrentPassword('');
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('[password-manage] unexpected error', err);
+      setError(PASSWORD_ERROR_MESSAGES.updateFailed);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    confirmPassword,
+    currentPassword,
+    onSuccessRedirectUrl,
+    password,
+    requireCurrentPassword,
+    router,
+    successMessage,
+  ]);
 
   return {
     currentPassword,

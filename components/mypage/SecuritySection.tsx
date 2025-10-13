@@ -8,16 +8,25 @@ export default function SecuritySection({ session }: { session: Session }) {
     <section className="border p-4 rounded bg-gray-50">
       <h2 className="text-lg font-semibold mb-2">セキュリティ</h2>
 
-      {session.user?.twoFactorEnabled ? (
-        <p className="text-green-600 text-sm">✅ 2段階認証は有効になっています</p>
-      ) : (
+      <div className="space-y-3">
+        {session.user?.twoFactorEnabled ? (
+          <p className="text-green-600 text-sm">✅ 2段階認証は有効になっています</p>
+        ) : (
+          <Link
+            href="/2fa/setup"
+            className="inline-block px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          >
+            2段階認証を有効化する
+          </Link>
+        )}
+
         <Link
-          href="/2fa/setup"
-          className="inline-block px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+          href="/account/password/change"
+          className="inline-block px-4 py-2 bg-gray-900 text-white text-sm rounded hover:bg-gray-800"
         >
-          2段階認証を有効化する
+          パスワードを変更する
         </Link>
-      )}
+      </div>
     </section>
   );
 }
