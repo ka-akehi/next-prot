@@ -8,6 +8,7 @@
 2. 認証試行ログのスキーマを決める（timestamp, ip, username, path, user_agent, result）
 3. ロギングパイプラインを確立（コンソール →Fluentd/Logstash/Datadog へ送る）
    - Next.js は `src/infrastructure/logging/auth-attempt-logger.ts` を介して `logs/auth-attempts.log`（NDJSON）へ認証イベントを出力し、Fluent Bit が `../next-prot/logs/*.log` を tail して集中収集する（スキーマは `types/auth-attempt-log.ts`）。
+   - ログを収集できているかは `laravel-prot` で `docker compose logs -f fluent-bit` を実施するか直接ログファイルを見る。
 4. 開発環境に必要パッケージを追加（ioredis, bcrypt, dotenv など）
 
 チェックポイント: Redis に接続できる / 最低限のログが収集できている

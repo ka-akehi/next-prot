@@ -1,6 +1,5 @@
 import { authConfig } from '@infrastructure/auth/auth.config';
 import { TWO_FACTOR_ERROR_MESSAGES } from '@domain/messages/error.messages';
-import { prisma } from '@infrastructure/persistence/prisma';
 import { verify2FA } from '@infrastructure/auth/twofactor';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
@@ -24,12 +23,6 @@ export async function POST(req: Request) {
   if (!ok) {
     return NextResponse.json({ success: false, error: TWO_FACTOR_ERROR_MESSAGES.invalidCode }, { status: 400 });
   }
-
-  // ✅ DB に最終検証時刻を保存
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { lastTwoFactorAt: new Date() },
-  });
 
   return NextResponse.json({ success: true });
 }

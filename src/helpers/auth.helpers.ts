@@ -96,6 +96,20 @@ export async function verifyPasswordOrThrow(
   return user;
 }
 
+export async function markTwoFactorPending(
+  prisma: PrismaClient,
+  user: User
+): Promise<User> {
+  if (!user.twoFactorEnabled) {
+    return user;
+  }
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { lastTwoFactorAt: null },
+  });
+}
+
 export function mapErrorToAttemptResult(error: unknown): AuthAttemptResult {
   if (!(error instanceof Error)) {
     return "error";
@@ -117,7 +131,11 @@ export function mapErrorToAttemptResult(error: unknown): AuthAttemptResult {
     return "locked";
   }
 
-  if (message.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
+  if (
+    message.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX) ||
+    message === AUTH_ERROR_CODES.TwoFactorRequired ||
+    message === AUTH_ERROR_CODES.InvalidTwoFactorCode
+  ) {
     return "mfa-required";
   }
 

@@ -43,7 +43,7 @@ export async function verify2FA(userId: string, token: string): Promise<boolean>
   if (verified) {
     await prisma.user.update({
       where: { id: userId },
-      data: { twoFactorEnabled: true },
+      data: { twoFactorEnabled: true, lastTwoFactorAt: new Date() },
     });
   }
 

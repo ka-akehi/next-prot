@@ -4,6 +4,7 @@ import {
   DEFAULT_AUTH_ERROR_MESSAGE,
   PASSWORD_REQUIRED_ERROR_PREFIX,
 } from '@domain/auth/auth.errors';
+import type { Session } from 'next-auth';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -51,6 +52,22 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
     }
   }, [initialErrorMessage]);
 
+  const fetchSession = useCallback(async (): Promise<Session | null> => {
+    try {
+      const response = await fetch('/api/auth/session', { cache: 'no-store' });
+      if (!response.ok) return null;
+      return (await response.json()) as Session;
+    } catch (error) {
+      console.error('[login] failed to fetch session', error);
+      return null;
+    }
+  }, []);
+
+  const needsTwoFactorVerification = useCallback(async () => {
+    const session = await fetchSession();
+    return Boolean(session?.user?.twoFactorEnabled && !session?.user?.twoFactorVerified);
+  }, [fetchSession]);
+
   const handleCredentialsLogin = useCallback(async () => {
     setFormError(null);
     setIsSubmitting(true);
@@ -67,24 +84,31 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
         if (result.error.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
           const redirectTarget = result.error.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
           router.push(redirectTarget);
-          setIsSubmitting(false);
           return;
         }
 
         const mappedMessage = AUTH_ERROR_MESSAGES[result.error as keyof typeof AUTH_ERROR_MESSAGES];
         const message = mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE;
         setFormError(message);
-        setIsSubmitting(false);
         return;
       }
 
+      const requires2FA = await needsTwoFactorVerification();
+
+      if (requires2FA) {
+        router.push(`/2fa/verify?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        return;
+      }
+
+      await fetch('/api/auth/session?update', { cache: 'no-store' }).catch(() => undefined);
       router.push(result?.url ?? callbackUrl);
     } catch (error) {
       console.error('[login] credentials sign-in failed', error);
       setFormError(AUTH_PROCESS_ERROR_MESSAGES.login);
+    } finally {
       setIsSubmitting(false);
     }
-  }, [callbackUrl, email, password, router]);
+  }, [callbackUrl, email, needsTwoFactorVerification, password, router]);
 
   return {
     status,

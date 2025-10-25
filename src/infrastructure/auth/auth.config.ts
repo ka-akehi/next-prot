@@ -4,6 +4,7 @@ import {
   ensureAccountNotLocked,
   ensurePasswordIsConfigured,
   fetchUserForEmail,
+  markTwoFactorPending,
   mapErrorToAttemptResult,
   resetLoginStateIfExpired,
   verifyPasswordOrThrow,
@@ -56,6 +57,7 @@ export const authConfig: NextAuthOptions = {
           await ensurePasswordIsConfigured(user, normalizedEmail, callbackUrl);
           ensureAccountNotLocked(user);
           user = await verifyPasswordOrThrow(prisma, user, password);
+          user = await markTwoFactorPending(prisma, user);
 
           await logAuthAttempt({
             username: usernameForLog,

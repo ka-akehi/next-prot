@@ -1,12 +1,16 @@
 'use client';
 
 import { GENERAL_ERROR_MESSAGES, TWO_FACTOR_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 export default function TwoFAVerifyPage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const params = useSearchParams();
+  const router = useRouter();
+  const callbackUrl = params?.get('callbackUrl') ?? '/bbs';
 
   const verify = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -26,9 +30,7 @@ export default function TwoFAVerifyPage() {
       if (data.success) {
         // セッションをリロードさせて新しいJWTを取得
         await fetch('/api/auth/session?update', { cache: 'no-store' });
-
-        // そのままリダイレクト
-        window.location.href = '/bbs';
+        router.replace(callbackUrl);
       } else {
         setError(data.error ?? TWO_FACTOR_ERROR_MESSAGES.invalidCode);
       }
