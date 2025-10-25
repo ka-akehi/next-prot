@@ -1,8 +1,8 @@
 import ExportSection from '@/components/mypage/ExportSection';
 import SecuritySection from '@/components/mypage/SecuritySection';
 import { PostList } from '@/components/post';
-import { authConfig } from '@/lib/auth.config';
-import { prisma } from '@/lib/prisma';
+import { authConfig } from '@infrastructure/auth/auth.config';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { getServerSession } from 'next-auth';
 
 export default async function MyPage() {

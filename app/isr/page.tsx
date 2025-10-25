@@ -1,4 +1,4 @@
-import { getAllProducts, getAllCategories, getAllTags } from "@/lib/products";
+import { getAllProducts, getAllCategories, getAllTags } from "@infrastructure/catalog/products";
 import Link from "next/link";
 
 export const revalidate = 60; // ISR: 60秒ごとに再生成

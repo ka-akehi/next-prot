@@ -1,5 +1,5 @@
-import { authConfig } from '@/lib/auth.config';
-import { AUTH_API_ERROR_MESSAGES } from '@/lib/error.messages';
+import { authConfig } from '@infrastructure/auth/auth.config';
+import { AUTH_API_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 

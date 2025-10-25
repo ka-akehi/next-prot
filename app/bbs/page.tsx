@@ -1,6 +1,6 @@
 import { PostForm, PostList } from '@/components/post';
-import { authConfig } from '@/lib/auth.config';
-import { prisma } from '@/lib/prisma';
+import { authConfig } from '@infrastructure/auth/auth.config';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { PostWithUser } from '@/types/post';
 import { getServerSession } from 'next-auth';
 

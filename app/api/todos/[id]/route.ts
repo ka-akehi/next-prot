@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {

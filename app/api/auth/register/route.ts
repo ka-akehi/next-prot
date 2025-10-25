@@ -1,41 +1,59 @@
-import { PASSWORD_ERROR_MESSAGES, REGISTER_ERROR_MESSAGES } from '@/lib/error.messages';
-import { issuePasswordSetupToken } from '@/lib/password-token';
-import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
-import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
-import { hash } from 'bcryptjs';
-import { NextResponse } from 'next/server';
+import {
+  PASSWORD_ERROR_MESSAGES,
+  REGISTER_ERROR_MESSAGES,
+} from "@domain/messages/error.messages";
+import {
+  MIN_PASSWORD_LENGTH,
+  isPasswordComplex,
+} from "@/helpers/password-policy.helpers";
+import { issuePasswordSetupToken } from "@application/auth/password-token";
+import { prisma } from "@infrastructure/persistence/prisma";
+import { Prisma } from "@prisma/client";
+import { hash } from "bcryptjs";
+import { NextResponse } from "next/server";
 
 const EMAIL_REGEX = new RegExp(
   [
     "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+",
-    '@',
-    '[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?',
-    '(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
-  ].join('')
+    "@",
+    "[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?",
+    "(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+  ].join("")
 );
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const name = !!body.name ? body.name.trim() : '';
-    const email = !!body.email ? body.email.trim() : '';
-    const password = !!body.password ? body.password : '';
+    const name = !!body.name ? body.name.trim() : "";
+    const email = !!body.email ? body.email.trim() : "";
+    const password = !!body.password ? body.password : "";
 
     if (!email || !password) {
-      return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.credentialsRequired }, { status: 400 });
+      return NextResponse.json(
+        { error: REGISTER_ERROR_MESSAGES.credentialsRequired },
+        { status: 400 }
+      );
     }
 
     if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.invalidEmail }, { status: 400 });
+      return NextResponse.json(
+        { error: REGISTER_ERROR_MESSAGES.invalidEmail },
+        { status: 400 }
+      );
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) }, { status: 400 });
+      return NextResponse.json(
+        { error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) },
+        { status: 400 }
+      );
     }
 
     if (!isPasswordComplex(password)) {
-      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
+      return NextResponse.json(
+        { error: PASSWORD_ERROR_MESSAGES.complexity },
+        { status: 400 }
+      );
     }
 
     const normalizedEmail = email.toLowerCase();
@@ -63,7 +81,10 @@ export async function POST(request: Request) {
     }
 
     if (existingUser?.passwordHash) {
-      return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.alreadyRegistered }, { status: 409 });
+      return NextResponse.json(
+        { error: REGISTER_ERROR_MESSAGES.alreadyRegistered },
+        { status: 409 }
+      );
     }
 
     if (existingUser) {
@@ -71,7 +92,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: REGISTER_ERROR_MESSAGES.requirePasswordSetup,
-          redirectTo: '/account/password/new',
+          redirectTo: "/account/password/new",
           passwordSetupToken: token,
           email: normalizedEmail,
         },
@@ -90,7 +111,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[register] unexpected error', error);
-    return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.unexpected }, { status: 500 });
+    console.error("[register] unexpected error", error);
+    return NextResponse.json(
+      { error: REGISTER_ERROR_MESSAGES.unexpected },
+      { status: 500 }
+    );
   }
 }

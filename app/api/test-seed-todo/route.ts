@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 
 export async function POST(req: Request) {
   try {

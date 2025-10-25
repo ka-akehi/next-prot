@@ -1,28 +1,36 @@
-import { authConfig } from '@/lib/auth.config';
+import { authConfig } from "@infrastructure/auth/auth.config";
 import {
   AUTH_API_ERROR_MESSAGES,
   GENERAL_ERROR_MESSAGES,
   PASSWORD_ERROR_MESSAGES,
-} from '@/lib/error.messages';
-import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
-import { prisma } from '@/lib/prisma';
-import { compare, hash } from 'bcryptjs';
-import { getServerSession } from 'next-auth';
-import { NextResponse } from 'next/server';
+} from "@domain/messages/error.messages";
+import {
+  MIN_PASSWORD_LENGTH,
+  isPasswordComplex,
+} from "@/helpers/password-policy.helpers";
+import { prisma } from "@infrastructure/persistence/prisma";
+import { compare, hash } from "bcryptjs";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authConfig);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: GENERAL_ERROR_MESSAGES.authRequired }, { status: 401 });
+    return NextResponse.json(
+      { error: GENERAL_ERROR_MESSAGES.authRequired },
+      { status: 401 }
+    );
   }
 
   try {
     const body = await request.json();
-    const password = typeof body.password === 'string' ? body.password : '';
+    const password = typeof body.password === "string" ? body.password : "";
     const confirmPassword =
-      typeof body.confirmPassword === 'string' ? body.confirmPassword : '';
+      typeof body.confirmPassword === "string" ? body.confirmPassword : "";
     const currentPassword =
-      typeof body.currentPassword === 'string' ? body.currentPassword : undefined;
+      typeof body.currentPassword === "string"
+        ? body.currentPassword
+        : undefined;
 
     if (!password || !confirmPassword) {
       return NextResponse.json(
@@ -46,13 +54,21 @@ export async function POST(request: Request) {
     }
 
     if (!isPasswordComplex(password)) {
-      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
+      return NextResponse.json(
+        { error: PASSWORD_ERROR_MESSAGES.complexity },
+        { status: 400 }
+      );
     }
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
 
     if (!user) {
-      return NextResponse.json({ error: AUTH_API_ERROR_MESSAGES.userNotFound }, { status: 404 });
+      return NextResponse.json(
+        { error: AUTH_API_ERROR_MESSAGES.userNotFound },
+        { status: 404 }
+      );
     }
 
     if (user.passwordHash) {
@@ -86,7 +102,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('[password] unexpected error', error);
+    console.error("[password] unexpected error", error);
     return NextResponse.json(
       { error: PASSWORD_ERROR_MESSAGES.updateFailed },
       { status: 500 }

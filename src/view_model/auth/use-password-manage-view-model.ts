@@ -1,7 +1,13 @@
-import { PASSWORD_ERROR_MESSAGES, PASSWORD_SUCCESS_MESSAGES } from '@/lib/error.messages';
-import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import {
+  PASSWORD_ERROR_MESSAGES,
+  PASSWORD_SUCCESS_MESSAGES,
+} from "@domain/messages/error.messages";
+import {
+  MIN_PASSWORD_LENGTH,
+  isPasswordComplex,
+} from "@/helpers/password-policy.helpers";
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 
 type UsePasswordManageViewModelParams = {
   onSuccessRedirectUrl?: string;
@@ -15,9 +21,9 @@ export function usePasswordManageViewModel({
   successMessage,
 }: UsePasswordManageViewModelParams = {}) {
   const router = useRouter();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,9 +55,9 @@ export function usePasswordManageViewModel({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           currentPassword: currentPassword || undefined,
           password,
@@ -73,11 +79,11 @@ export function usePasswordManageViewModel({
         return;
       }
 
-      setCurrentPassword('');
-      setPassword('');
-      setConfirmPassword('');
+      setCurrentPassword("");
+      setPassword("");
+      setConfirmPassword("");
     } catch (err) {
-      console.error('[password-manage] unexpected error', err);
+      console.error("[password-manage] unexpected error", err);
       setError(PASSWORD_ERROR_MESSAGES.updateFailed);
     } finally {
       setIsSubmitting(false);

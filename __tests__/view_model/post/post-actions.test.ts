@@ -1,12 +1,12 @@
-import { getAuthSession } from '@/lib/auth';
-import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@/lib/error.messages';
-import { prisma } from '@/lib/prisma';
+import { getAuthSession } from '@infrastructure/auth/auth';
+import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { createPost, deletePost, updatePost } from '@/view_model/post/post-actions';
 import { describe, expect } from '@jest/globals';
 
 global.fetch = jest.fn(); // or jest.fn()
 
-jest.mock('@/lib/auth', () => ({
+jest.mock('@infrastructure/auth/auth', () => ({
   getAuthSession: jest.fn(),
 }));
 

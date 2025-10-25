@@ -1,4 +1,4 @@
-import { getAllTags, getPostsByTag } from '@/lib/getPostsByTag';
+import { getAllTags, getPostsByTag } from '@infrastructure/content/getPostsByTag';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 

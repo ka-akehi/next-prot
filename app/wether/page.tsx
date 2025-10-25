@@ -1,6 +1,6 @@
 'use client';
 
-import { GENERAL_ERROR_MESSAGES } from '@/lib/error.messages';
+import { GENERAL_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { useState } from 'react';
 
 type WeatherResponse = {

@@ -8,7 +8,8 @@ const config: Config = {
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/$1',
+    '^@/app/(.*)$': '<rootDir>/app/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: ['node_modules/(?!(next-auth)/)'],
 };

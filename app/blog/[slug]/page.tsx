@@ -1,5 +1,5 @@
-import { getAllPosts } from '@/lib/getAllPosts';
-import { getPost } from '@/lib/getPost';
+import { getAllPosts } from '@infrastructure/content/getAllPosts';
+import { getPost } from '@infrastructure/content/getPost';
 import { notFound } from 'next/navigation';
 
 export async function generateStaticParams() {

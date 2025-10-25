@@ -1,4 +1,4 @@
-import { POSTS_DIR } from '@/lib/getAllPosts';
+import { POSTS_DIR } from '@infrastructure/content/getAllPosts';
 import fs from 'fs';
 import matter from 'gray-matter';
 import path from 'path';

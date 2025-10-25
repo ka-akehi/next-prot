@@ -1,4 +1,4 @@
-import { getAllProducts, getProductById } from "@/lib/products";
+import { getAllProducts, getProductById } from "@infrastructure/catalog/products";
 import { notFound } from "next/navigation";
 
 export async function generateStaticParams() {

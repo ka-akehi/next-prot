@@ -19,13 +19,16 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "@server/*": ["server/*"],
-      "@lib/*": ["lib/*"]
+      "@/app/*": ["./app/*"],
+      "@/*": ["./src/*"],
+      "@domain/*": ["src/domain/*"],
+      "@application/*": ["src/application/*"],
+      "@infrastructure/*": ["src/infrastructure/*"],
+      "@shared/*": ["src/shared/*"]
     },
     "baseUrl": ".",
     "forceConsistentCasingInFileNames": true,
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "typeRoots": ["./src/types", "./node_modules/@types"],
     "types": ["jest", "node", "cypress"]
   },
   "include": [
@@ -41,7 +44,7 @@
     "jest.config.ts",
     "jest.setup.ts",
     ".next/types/**/*.ts",
-    "types/**/*.d.ts"
+    "src/types/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

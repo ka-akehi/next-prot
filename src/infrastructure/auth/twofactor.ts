@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 

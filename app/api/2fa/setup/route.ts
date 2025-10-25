@@ -1,6 +1,6 @@
-import { authConfig } from '@/lib/auth.config';
-import { GENERAL_ERROR_MESSAGES } from '@/lib/error.messages';
-import { generate2FASecret } from '@/lib/twofactor';
+import { authConfig } from '@infrastructure/auth/auth.config';
+import { GENERAL_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { generate2FASecret } from '@infrastructure/auth/twofactor';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { POST_ERROR_MESSAGES } from '@/lib/error.messages';
+import { POST_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { deletePost } from '@/view_model/post/post-actions';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';

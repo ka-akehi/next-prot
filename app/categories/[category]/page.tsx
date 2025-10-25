@@ -1,4 +1,4 @@
-import { getAllCategories, getPostsByCategory } from '@/lib/getPostsByCategory';
+import { getAllCategories, getPostsByCategory } from '@infrastructure/content/getPostsByCategory';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 

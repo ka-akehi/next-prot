@@ -1,14 +1,14 @@
-import { ensureRedisConnection } from '@/lib/redis';
-import { NextResponse } from 'next/server';
+import { ensureRedisConnection } from "@/helpers/redis.helpers";
+import { NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   if (!process.env.REDIS_URL) {
     return NextResponse.json(
       {
         ok: false,
-        error: { code: 'CONFIG_ERROR', message: 'REDIS_URL is not configured' },
+        error: { code: "CONFIG_ERROR", message: "REDIS_URL is not configured" },
       },
       { status: 500 }
     );
@@ -25,7 +25,7 @@ export async function GET() {
       {
         ok: true,
         data: {
-          status: pong === 'PONG' ? 'healthy' : 'unexpected-response',
+          status: pong === "PONG" ? "healthy" : "unexpected-response",
           latencyMs,
           pong,
         },
@@ -33,14 +33,14 @@ export async function GET() {
       { status: 200 }
     );
   } catch (error) {
-    console.error('[redis] health check failed', error);
+    console.error("[redis] health check failed", error);
 
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const message = error instanceof Error ? error.message : "Unknown error";
 
     return NextResponse.json(
       {
         ok: false,
-        error: { code: 'REDIS_UNAVAILABLE', message },
+        error: { code: "REDIS_UNAVAILABLE", message },
       },
       { status: 503 }
     );

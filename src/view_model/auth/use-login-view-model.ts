@@ -3,7 +3,7 @@ import {
   AUTH_PROCESS_ERROR_MESSAGES,
   DEFAULT_AUTH_ERROR_MESSAGE,
   PASSWORD_REQUIRED_ERROR_PREFIX,
-} from '@/lib/auth.errors';
+} from '@domain/auth/auth.errors';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';

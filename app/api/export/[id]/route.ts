@@ -1,5 +1,5 @@
-import { EXPORT_ERROR_MESSAGES } from '@/lib/error.messages';
-import { prisma } from '@/lib/prisma';
+import { EXPORT_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { NextResponse } from 'next/server';
 
 interface Params {

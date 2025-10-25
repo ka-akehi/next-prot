@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { broadcastExport } from '@/server/export-ws-handler';
 import type { ExportStatus } from '@prisma/client';
 import { stringify } from 'csv-stringify';

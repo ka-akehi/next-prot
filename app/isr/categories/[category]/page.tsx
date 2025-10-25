@@ -1,4 +1,4 @@
-import { getAllCategories, getProductsByCategory } from "@/lib/products";
+import { getAllCategories, getProductsByCategory } from "@infrastructure/catalog/products";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 

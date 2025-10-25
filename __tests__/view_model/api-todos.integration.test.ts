@@ -3,7 +3,7 @@
 // 依存関係のモックは使用せず、実際のAPIエンドポイントをテスト
 import { DELETE as DELETE_TODO } from '@/app/api/todos/[id]/route';
 import { GET as GET_TODOS, POST as POST_TODO } from '@/app/api/todos/route';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 import type { ToDo } from '@/types/todo';
 import { describe, expect } from '@jest/globals';
 

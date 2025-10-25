@@ -1,7 +1,7 @@
-import { PASSWORD_ERROR_MESSAGES } from '@/lib/error.messages';
+import { PASSWORD_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { hash } from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { prisma } from './prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 
 const PASSWORD_SETUP_TOKEN_TTL_MS = 1000 * 60 * 15; // 15 minutes
 

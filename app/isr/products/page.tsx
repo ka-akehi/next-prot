@@ -1,4 +1,4 @@
-import { getAllProducts } from "@/lib/products";
+import { getAllProducts } from "@infrastructure/catalog/products";
 import Link from "next/link";
 
 export const dynamic = "force-static"; // SSGとして明示的に生成

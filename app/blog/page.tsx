@@ -1,4 +1,4 @@
-import { getAllPosts } from '@/lib/getAllPosts';
+import { getAllPosts } from '@infrastructure/content/getAllPosts';
 import Link from 'next/link';
 
 export const metadata = {

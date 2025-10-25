@@ -1,6 +1,6 @@
 'use client';
 
-import { POLL_ERROR_MESSAGES } from '@/lib/error.messages';
+import { POLL_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { Poll, fetchPoll, vote } from '@/models/polls/poll';
 import { useEffect, useState } from 'react';
 

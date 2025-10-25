@@ -1,9 +1,12 @@
-'use server';
+"use server";
 
-import { getAuthSession } from '@/lib/auth';
-import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@/lib/error.messages';
-import { prisma } from '@/lib/prisma';
-import { logServerError } from '@/lib/server-log';
+import { getAuthSession } from "@infrastructure/auth/auth";
+import {
+  GENERAL_ERROR_MESSAGES,
+  POST_ERROR_MESSAGES,
+} from "@domain/messages/error.messages";
+import { prisma } from "@infrastructure/persistence/prisma";
+import { logServerError } from "@/helpers/server-log.helpers";
 
 type CreatePostArgs = {
   content: string;
@@ -24,7 +27,7 @@ export async function createPost({ content, userId }: CreatePostArgs) {
     });
     return post;
   } catch (error) {
-    await logServerError(error, 'createPost');
+    await logServerError(error, "createPost");
     throw new Error(POST_ERROR_MESSAGES.createFailed);
   }
 }

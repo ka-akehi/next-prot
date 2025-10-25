@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { runCsvExportInBackground } from '@/server/export-worker';
 import type { ExportStatus } from '@prisma/client';
 import { NextResponse } from 'next/server';

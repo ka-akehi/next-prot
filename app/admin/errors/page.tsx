@@ -1,5 +1,5 @@
 import { ErrorLogTable } from '@/components/errors/error-log-table';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

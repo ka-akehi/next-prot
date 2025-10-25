@@ -1,9 +1,18 @@
-import { AUTH_ERROR_MESSAGES, DEFAULT_AUTH_ERROR_MESSAGE } from '@/lib/auth.errors';
-import { PASSWORD_ERROR_MESSAGES, PASSWORD_SUCCESS_MESSAGES } from '@/lib/error.messages';
-import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/lib/password-policy';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import {
+  AUTH_ERROR_MESSAGES,
+  DEFAULT_AUTH_ERROR_MESSAGE,
+} from "@domain/auth/auth.errors";
+import {
+  PASSWORD_ERROR_MESSAGES,
+  PASSWORD_SUCCESS_MESSAGES,
+} from "@domain/messages/error.messages";
+import {
+  MIN_PASSWORD_LENGTH,
+  isPasswordComplex,
+} from "@/helpers/password-policy.helpers";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 
 type UsePasswordSetupViewModelParams = {
   email?: string;
@@ -11,10 +20,14 @@ type UsePasswordSetupViewModelParams = {
   redirectUrl?: string;
 };
 
-export function usePasswordSetupViewModel({ email, token, redirectUrl }: UsePasswordSetupViewModelParams) {
+export function usePasswordSetupViewModel({
+  email,
+  token,
+  redirectUrl,
+}: UsePasswordSetupViewModelParams) {
   const router = useRouter();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,9 +63,9 @@ export function usePasswordSetupViewModel({ email, token, redirectUrl }: UsePass
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/password/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/password/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
           password,
@@ -71,8 +84,8 @@ export function usePasswordSetupViewModel({ email, token, redirectUrl }: UsePass
 
       setSuccess(PASSWORD_SUCCESS_MESSAGES.updated);
 
-      const callbackUrl = redirectUrl ?? '/bbs';
-      const signInResult = await signIn('credentials', {
+      const callbackUrl = redirectUrl ?? "/bbs";
+      const signInResult = await signIn("credentials", {
         redirect: false,
         email,
         password,
@@ -80,7 +93,10 @@ export function usePasswordSetupViewModel({ email, token, redirectUrl }: UsePass
       });
 
       if (signInResult?.error) {
-        const mappedMessage = AUTH_ERROR_MESSAGES[signInResult.error as keyof typeof AUTH_ERROR_MESSAGES];
+        const mappedMessage =
+          AUTH_ERROR_MESSAGES[
+            signInResult.error as keyof typeof AUTH_ERROR_MESSAGES
+          ];
         setError(mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE);
         setIsSubmitting(false);
         return;
@@ -89,7 +105,7 @@ export function usePasswordSetupViewModel({ email, token, redirectUrl }: UsePass
       setIsSubmitting(false);
       router.push(signInResult?.url ?? callbackUrl);
     } catch (err) {
-      console.error('[password-setup] unexpected error', err);
+      console.error("[password-setup] unexpected error", err);
       setError(PASSWORD_ERROR_MESSAGES.updateFailed);
       setIsSubmitting(false);
     }

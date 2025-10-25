@@ -1,6 +1,6 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function deleteErrorLog(type: 'server' | 'client', id: string) {

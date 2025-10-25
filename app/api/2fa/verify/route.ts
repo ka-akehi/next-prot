@@ -1,7 +1,7 @@
-import { authConfig } from '@/lib/auth.config';
-import { TWO_FACTOR_ERROR_MESSAGES } from '@/lib/error.messages';
-import { prisma } from '@/lib/prisma';
-import { verify2FA } from '@/lib/twofactor';
+import { authConfig } from '@infrastructure/auth/auth.config';
+import { TWO_FACTOR_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { prisma } from '@infrastructure/persistence/prisma';
+import { verify2FA } from '@infrastructure/auth/twofactor';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 
