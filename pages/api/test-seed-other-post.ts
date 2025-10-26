@@ -28,10 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const uniqueContent = `${body} ::seed::${Date.now()}`;
 
   const post = await createPost({
-    data: {
-      content: uniqueContent,
-      userId: other.id,
-    },
+    content: uniqueContent,
+    user: { connect: { id: other.id } },
   });
 
   return res.status(200).json({
