@@ -9,7 +9,7 @@ type Log = {
   stack?: string | null;
   pathname: string;
   userAgent: string;
-  createdAt: string;
+  createdAt: Date | string;
 };
 
 type Props = {

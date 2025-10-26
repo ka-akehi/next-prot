@@ -1,18 +1,16 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { createClientErrorLog } from '@/repositories/error-logs/error-log.repository';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
     const { message, stack, pathname, userAgent } = await req.json();
 
-    await prisma.clientErrorLog.create({
-      data: {
-        message,
-        stack,
-        pathname,
-        userAgent,
-        createdAt: new Date(),
-      },
+    await createClientErrorLog({
+      message,
+      stack,
+      pathname,
+      userAgent,
+      createdAt: new Date(),
     });
 
     return NextResponse.json({ success: true });

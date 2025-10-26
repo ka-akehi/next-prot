@@ -1,13 +1,13 @@
 'use server';
 
-import { prisma } from '@infrastructure/persistence/prisma';
+import { deleteClientErrorLogById, deleteServerErrorLogById } from '@/repositories/error-logs/error-log.repository';
 import { revalidatePath } from 'next/cache';
 
 export async function deleteErrorLog(type: 'server' | 'client', id: string) {
   if (type === 'server') {
-    await prisma.serverErrorLog.delete({ where: { id } });
+    await deleteServerErrorLogById(id);
   } else {
-    await prisma.clientErrorLog.delete({ where: { id } });
+    await deleteClientErrorLogById(id);
   }
 
   revalidatePath('/admin/errors');

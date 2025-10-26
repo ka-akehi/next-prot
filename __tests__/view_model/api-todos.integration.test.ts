@@ -3,8 +3,9 @@
 // 依存関係のモックは使用せず、実際のAPIエンドポイントをテスト
 import { DELETE as DELETE_TODO } from '@/app/api/todos/[id]/route';
 import { GET as GET_TODOS, POST as POST_TODO } from '@/app/api/todos/route';
-import { prisma } from '@infrastructure/persistence/prisma';
+import { deleteAllTodos } from '@/repositories/todos/todo.repository';
 import type { ToDo } from '@/types/todo';
+import { prisma } from '@infrastructure/persistence/prisma';
 import { describe, expect } from '@jest/globals';
 
 /**
@@ -12,7 +13,7 @@ import { describe, expect } from '@jest/globals';
  */
 describe('Route Handlers: /api/todos (integration-ish)', () => {
   beforeAll(async () => {
-    await prisma.todo.deleteMany({});
+    await deleteAllTodos();
   });
 
   afterAll(async () => {

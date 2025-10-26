@@ -1,17 +1,15 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { createTodo, deleteAllTodos } from '@/repositories/todos/todo.repository';
 
 export async function POST(req: Request) {
   try {
     const { title } = await req.json();
 
     // 既存のTodoを全削除
-    await prisma.todo.deleteMany({});
+    await deleteAllTodos();
 
     // 新規作成
-    const todo = await prisma.todo.create({
-      data: {
-        title: title || `seed todo ${Date.now()}`,
-      },
+    const todo = await createTodo({
+      title: title || `seed todo ${Date.now()}`,
     });
 
     return new Response(JSON.stringify(todo), {

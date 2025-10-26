@@ -6,7 +6,10 @@ import {
   MIN_PASSWORD_LENGTH,
   isPasswordComplex,
 } from "@/helpers/password-policy.helpers";
-import { prisma } from "@infrastructure/persistence/prisma";
+import {
+  findUserByEmailCandidates,
+  updateUserById,
+} from "@/repositories/users/user.repository";
 import { compare, hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 
@@ -62,13 +65,7 @@ export async function POST(request: Request) {
 
     const normalizedEmail = rawEmail.toLowerCase();
 
-    const user = await prisma.user.findFirst({
-      where: {
-        email: {
-          in: [normalizedEmail, rawEmail],
-        },
-      },
-    });
+    const user = await findUserByEmailCandidates([normalizedEmail, rawEmail]);
 
     if (!user) {
       return NextResponse.json(
@@ -108,14 +105,11 @@ export async function POST(request: Request) {
 
     const passwordHash = await hash(password, 10);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        email: user.email ? user.email.toLowerCase() : normalizedEmail,
-        passwordSetupToken: null,
-        passwordSetupTokenExpires: null,
-      },
+    await updateUserById(user.id, {
+      passwordHash,
+      email: user.email ? user.email.toLowerCase() : normalizedEmail,
+      passwordSetupToken: null,
+      passwordSetupTokenExpires: null,
     });
 
     return NextResponse.json({ success: true });

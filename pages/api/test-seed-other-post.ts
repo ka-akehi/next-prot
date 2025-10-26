@@ -1,4 +1,5 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { createPost } from '@/repositories/posts/post.repository';
+import { upsertUserByEmail } from '@/repositories/users/user.repository';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,20 +14,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const body = content?.toString().trim() || `Other user's post ${Date.now()}`;
 
   // テスト用の「別ユーザー」
-  const other = await prisma.user.upsert({
-    where: { email: 'otheruser@example.com' },
-    update: {},
-    create: {
+  const other = await upsertUserByEmail(
+    'otheruser@example.com',
+    {},
+    {
       email: 'otheruser@example.com',
       name: 'Other User',
       image: null,
-    },
-  });
+    }
+  );
 
   // 既存の同一本文を避けるため、軽くユニーク化
   const uniqueContent = `${body} ::seed::${Date.now()}`;
 
-  const post = await prisma.post.create({
+  const post = await createPost({
     data: {
       content: uniqueContent,
       userId: other.id,

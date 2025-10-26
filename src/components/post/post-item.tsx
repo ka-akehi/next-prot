@@ -1,18 +1,12 @@
 'use client';
 
+import { PostWithUser } from '@/types/post';
 import { usePostDelete } from '@/view_model/post/use-post-delete';
 import { usePostEdit } from '@/view_model/post/use-post-edit';
-import type { Post } from '@prisma/client';
 import { useSession } from 'next-auth/react';
 import { PostActions } from './post-actions';
 import { PostContent } from './post-content';
 import { PostEditor } from './post-editor';
-
-type PostWithUser = Post & {
-  user?: {
-    name?: string | null;
-  };
-};
 
 type Props = {
   post: PostWithUser;

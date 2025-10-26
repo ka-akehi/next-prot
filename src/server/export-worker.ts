@@ -1,4 +1,5 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { updateExportJobById } from '@/repositories/export-jobs/export-job.repository';
+import { countPosts, findPosts } from '@/repositories/posts/post.repository';
 import { broadcastExport } from '@/server/export-ws-handler';
 import type { ExportStatus } from '@prisma/client';
 import { stringify } from 'csv-stringify';
@@ -17,10 +18,7 @@ async function* generateMockPosts(count: number) {
 
 export async function runCsvExportInBackground(jobId: string) {
   // 1. ステータス更新 → processing
-  await prisma.exportJob.update({
-    where: { id: jobId },
-    data: { status: 'processing' as ExportStatus, progress: 0 },
-  });
+  await updateExportJobById(jobId, { status: 'processing' as ExportStatus, progress: 0 });
 
   try {
     // 2. 出力対象データを準備
@@ -29,7 +27,7 @@ export async function runCsvExportInBackground(jobId: string) {
     // 件数 (dev は 1万件でテスト、本番は DB 件数)
     const total = devMode
       ? 1_000_000 // 開発時に大きめのデータで負荷テスト可能
-      : await prisma.post.count();
+      : await countPosts();
 
     // 3. CSVファイルパス生成
     const fileName = `${jobId}.csv`;
@@ -60,10 +58,7 @@ export async function runCsvExportInBackground(jobId: string) {
         index++;
         if (index % 10_000 === 0) {
           const progress = Math.floor((index / total) * 100);
-          await prisma.exportJob.update({
-            where: { id: jobId },
-            data: { progress },
-          });
+          await updateExportJobById(jobId, { progress });
           broadcastExport(jobId, {
             type: 'export-progress',
             jobId,
@@ -78,11 +73,13 @@ export async function runCsvExportInBackground(jobId: string) {
       let skip = 0;
 
       while (skip < total) {
-        const posts = await prisma.post.findMany({
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: batchSize,
-        });
+        const posts = await findPosts(
+          { createdAt: 'desc' },
+          {
+            skip,
+            take: batchSize,
+          }
+        );
 
         for (const post of posts) {
           stringifier.write({
@@ -96,10 +93,7 @@ export async function runCsvExportInBackground(jobId: string) {
         skip += posts.length;
 
         const progress = Math.floor((index / total) * 100);
-        await prisma.exportJob.update({
-          where: { id: jobId },
-          data: { progress },
-        });
+        await updateExportJobById(jobId, { progress });
         broadcastExport(jobId, {
           type: 'export-progress',
           jobId,
@@ -117,13 +111,10 @@ export async function runCsvExportInBackground(jobId: string) {
     });
 
     // 5. ステータス更新 → completed
-    await prisma.exportJob.update({
-      where: { id: jobId },
-      data: {
-        status: 'completed' as ExportStatus,
-        progress: 100,
-        filePath: `/exports/${fileName}`,
-      },
+    await updateExportJobById(jobId, {
+      status: 'completed' as ExportStatus,
+      progress: 100,
+      filePath: `/exports/${fileName}`,
     });
 
     // WS通知（完了）
@@ -136,12 +127,9 @@ export async function runCsvExportInBackground(jobId: string) {
     });
   } catch (error) {
     // 6. エラー時は failed に更新
-    await prisma.exportJob.update({
-      where: { id: jobId },
-      data: {
-        status: 'failed' as ExportStatus,
-        error: String(error),
-      },
+    await updateExportJobById(jobId, {
+      status: 'failed' as ExportStatus,
+      error: String(error),
     });
 
     // WS通知（失敗）

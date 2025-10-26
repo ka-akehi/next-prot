@@ -1,9 +1,9 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { deleteTodoById } from '@/repositories/todos/todo.repository';
 
 export async function DELETE(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    await prisma.todo.delete({ where: { id } });
+    await deleteTodoById(id);
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

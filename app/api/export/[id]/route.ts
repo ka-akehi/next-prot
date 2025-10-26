@@ -1,5 +1,5 @@
+import { findExportJobById } from '@/repositories/export-jobs/export-job.repository';
 import { EXPORT_ERROR_MESSAGES } from '@domain/messages/error.messages';
-import { prisma } from '@infrastructure/persistence/prisma';
 import { NextResponse } from 'next/server';
 
 interface Params {
@@ -9,17 +9,14 @@ interface Params {
 export async function GET(_: Request, context: Params) {
   const { id } = await context.params;
 
-  const job = await prisma.exportJob.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      status: true,
-      filePath: true,
-      error: true,
-      progress: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+  const job = await findExportJobById(id, {
+    id: true,
+    status: true,
+    filePath: true,
+    error: true,
+    progress: true,
+    createdAt: true,
+    updatedAt: true,
   });
 
   if (!job) {

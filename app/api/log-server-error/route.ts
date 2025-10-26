@@ -1,4 +1,4 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { createServerErrorLog } from '@/repositories/error-logs/error-log.repository';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -6,15 +6,13 @@ export async function POST(req: NextRequest) {
     const { message, stack, digest, pathname, userAgent } = await req.json();
 
     // DBなどに保存する処理
-    await prisma.serverErrorLog.create({
-      data: {
-        message,
-        stack,
-        digest,
-        pathname,
-        userAgent,
-        createdAt: new Date(),
-      },
+    await createServerErrorLog({
+      message,
+      stack,
+      digest,
+      pathname,
+      userAgent,
+      createdAt: new Date(),
     });
 
     return NextResponse.json({ success: true });

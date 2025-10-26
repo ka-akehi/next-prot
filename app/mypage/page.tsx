@@ -1,8 +1,8 @@
 import ExportSection from '@/components/mypage/ExportSection';
 import SecuritySection from '@/components/mypage/SecuritySection';
 import { PostList } from '@/components/post';
+import { findPostsByInclude } from '@/repositories/posts/post.repository';
 import { authConfig } from '@infrastructure/auth/auth.config';
-import { prisma } from '@infrastructure/persistence/prisma';
 import { getServerSession } from 'next-auth';
 
 export default async function MyPage() {
@@ -16,11 +16,7 @@ export default async function MyPage() {
     );
   }
 
-  const posts = await prisma.post.findMany({
-    where: { userId: session.user.id },
-    include: { user: true },
-    orderBy: { createdAt: 'desc' },
-  });
+  const posts = await findPostsByInclude({ user: true }, { createdAt: 'desc' }, { userId: session.user.id });
 
   return (
     <main className="max-w-xl mx-auto space-y-6 p-4">

@@ -1,67 +1,68 @@
-import { logAuthAttempt } from "@infrastructure/logging/auth-attempt-logger";
-import { AUTH_ERROR_CODES } from "@domain/auth/auth.errors";
 import {
   ensureAccountNotLocked,
   ensurePasswordIsConfigured,
   fetchUserForEmail,
-  markTwoFactorPending,
   mapErrorToAttemptResult,
+  markTwoFactorPending,
   resetLoginStateIfExpired,
   verifyPasswordOrThrow,
-} from "@/helpers/auth.helpers";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { type NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import GitHubProvider from "next-auth/providers/github";
-import GoogleProvider from "next-auth/providers/google";
-import { prisma } from "@infrastructure/persistence/prisma";
+} from '@/helpers/auth.helpers';
+import { findUserById } from '@/repositories/users/user.repository';
+import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
+import { logAuthAttempt } from '@infrastructure/logging/auth-attempt-logger';
+import { prisma } from '@infrastructure/persistence/prisma';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { type NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GitHubProvider from 'next-auth/providers/github';
+import GoogleProvider from 'next-auth/providers/google';
 
 const MAX_2FA_AGE = 1000 * 60 * 60; // 1時間
-const DEFAULT_CALLBACK_URL = "/bbs";
+const DEFAULT_CALLBACK_URL = '/bbs';
 
 export const authConfig: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
-    strategy: "jwt", // JWTセッション戦略を明示
+    strategy: 'jwt', // JWTセッション戦略を明示
   },
   pages: {
-    signIn: "/login", // ← ここを追加
+    signIn: '/login', // ← ここを追加
   },
   providers: [
     CredentialsProvider({
-      name: "Email & Password",
+      name: 'Email & Password',
       credentials: {
         email: {
-          label: "メールアドレス",
-          type: "email",
-          placeholder: "you@example.com",
+          label: 'メールアドレス',
+          type: 'email',
+          placeholder: 'you@example.com',
         },
-        password: { label: "パスワード", type: "password" },
-        callbackUrl: { label: "callbackUrl", type: "text" },
+        password: { label: 'パスワード', type: 'password' },
+        callbackUrl: { label: 'callbackUrl', type: 'text' },
       },
       async authorize(credentials, req) {
-        const rawEmail = credentials?.email?.trim() ?? "";
-        const password = credentials?.password ?? "";
+        const rawEmail = credentials?.email?.trim() ?? '';
+        const password = credentials?.password ?? '';
         const callbackUrl = credentials?.callbackUrl ?? DEFAULT_CALLBACK_URL;
         const normalizedEmail = rawEmail.toLowerCase();
         const usernameForLog = normalizedEmail || rawEmail || null;
-        const logContext = { provider: "credentials" } as const;
+        const logContext = { provider: 'credentials' } as const;
 
         try {
           if (!rawEmail || !password) {
             throw new Error(AUTH_ERROR_CODES.MissingCredentials);
           }
 
-          let user = await fetchUserForEmail(prisma, normalizedEmail, rawEmail);
-          user = await resetLoginStateIfExpired(prisma, user);
+          let user = await fetchUserForEmail(normalizedEmail, rawEmail);
+          user = await resetLoginStateIfExpired(user);
           await ensurePasswordIsConfigured(user, normalizedEmail, callbackUrl);
           ensureAccountNotLocked(user);
-          user = await verifyPasswordOrThrow(prisma, user, password);
-          user = await markTwoFactorPending(prisma, user);
+          user = await verifyPasswordOrThrow(user, password);
+          user = await markTwoFactorPending(user);
 
           await logAuthAttempt({
             username: usernameForLog,
-            result: "success",
+            result: 'success',
             req,
             context: logContext,
           });
@@ -76,7 +77,7 @@ export const authConfig: NextAuthOptions = {
           await logAuthAttempt({
             username: usernameForLog,
             result: mapErrorToAttemptResult(error),
-            reason: error instanceof Error ? error.message : "unknown-error",
+            reason: error instanceof Error ? error.message : 'unknown-error',
             req,
             context: logContext,
           });
@@ -99,9 +100,7 @@ export const authConfig: NextAuthOptions = {
       if (user) token.id = user.id;
 
       if (token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-        });
+        const dbUser = await findUserById(token.id);
 
         token.twoFactorEnabled = dbUser?.twoFactorEnabled ?? false;
 

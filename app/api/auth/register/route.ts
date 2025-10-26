@@ -1,90 +1,52 @@
-import {
-  PASSWORD_ERROR_MESSAGES,
-  REGISTER_ERROR_MESSAGES,
-} from "@domain/messages/error.messages";
-import {
-  MIN_PASSWORD_LENGTH,
-  isPasswordComplex,
-} from "@/helpers/password-policy.helpers";
-import { issuePasswordSetupToken } from "@application/auth/password-token";
-import { prisma } from "@infrastructure/persistence/prisma";
-import { Prisma } from "@prisma/client";
-import { hash } from "bcryptjs";
-import { NextResponse } from "next/server";
+import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/helpers/password-policy.helpers';
+import { createUser, findMostRelevantUserByEmail, updateUserById } from '@/repositories/users/user.repository';
+import { issuePasswordSetupToken } from '@application/auth/password-token';
+import { PASSWORD_ERROR_MESSAGES, REGISTER_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { hash } from 'bcryptjs';
+import { NextResponse } from 'next/server';
 
 const EMAIL_REGEX = new RegExp(
   [
     "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+",
-    "@",
-    "[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?",
-    "(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
-  ].join("")
+    '@',
+    '[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?',
+    '(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
+  ].join('')
 );
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const name = !!body.name ? body.name.trim() : "";
-    const email = !!body.email ? body.email.trim() : "";
-    const password = !!body.password ? body.password : "";
+    const name = !!body.name ? body.name.trim() : '';
+    const email = !!body.email ? body.email.trim() : '';
+    const password = !!body.password ? body.password : '';
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: REGISTER_ERROR_MESSAGES.credentialsRequired },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.credentialsRequired }, { status: 400 });
     }
 
     if (!EMAIL_REGEX.test(email)) {
-      return NextResponse.json(
-        { error: REGISTER_ERROR_MESSAGES.invalidEmail },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.invalidEmail }, { status: 400 });
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      return NextResponse.json(
-        { error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.tooShort(MIN_PASSWORD_LENGTH) }, { status: 400 });
     }
 
     if (!isPasswordComplex(password)) {
-      return NextResponse.json(
-        { error: PASSWORD_ERROR_MESSAGES.complexity },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase();
 
-    const [existingUser] = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        email: string | null;
-        passwordHash: string | null;
-      }>
-    >(Prisma.sql`
-      SELECT "id", "email", "passwordHash"
-      FROM "User"
-      WHERE LOWER("email") = LOWER(${email})
-      ORDER BY CASE WHEN "passwordHash" IS NULL THEN 1 ELSE 0 END,
-               "createdAt" DESC
-      LIMIT 1
-    `);
+    const existingUser = await findMostRelevantUserByEmail(email);
 
     if (existingUser?.email && existingUser.email !== normalizedEmail) {
-      await prisma.user.update({
-        where: { id: existingUser.id },
-        data: { email: normalizedEmail },
-      });
+      await updateUserById(existingUser.id, { email: normalizedEmail });
     }
 
     if (existingUser?.passwordHash) {
-      return NextResponse.json(
-        { error: REGISTER_ERROR_MESSAGES.alreadyRegistered },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.alreadyRegistered }, { status: 409 });
     }
 
     if (existingUser) {
@@ -92,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: REGISTER_ERROR_MESSAGES.requirePasswordSetup,
-          redirectTo: "/account/password/new",
+          redirectTo: '/account/password/new',
           passwordSetupToken: token,
           email: normalizedEmail,
         },
@@ -100,21 +62,16 @@ export async function POST(request: Request) {
       );
     } else {
       const passwordHash = await hash(password, 10);
-      await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          name: name ?? null,
-          passwordHash,
-        },
+      await createUser({
+        email: normalizedEmail,
+        name: name ?? null,
+        passwordHash,
       });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[register] unexpected error", error);
-    return NextResponse.json(
-      { error: REGISTER_ERROR_MESSAGES.unexpected },
-      { status: 500 }
-    );
+    console.error('[register] unexpected error', error);
+    return NextResponse.json({ error: REGISTER_ERROR_MESSAGES.unexpected }, { status: 500 });
   }
 }

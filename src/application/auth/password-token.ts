@@ -1,7 +1,7 @@
 import { PASSWORD_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { hash } from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { prisma } from '@infrastructure/persistence/prisma';
+import { updateUserById } from '@/repositories/users/user.repository';
 
 const PASSWORD_SETUP_TOKEN_TTL_MS = 1000 * 60 * 15; // 15 minutes
 
@@ -14,12 +14,9 @@ export async function issuePasswordSetupToken(userId?: string) {
     throw new Error(PASSWORD_ERROR_MESSAGES.userIdRequired);
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      passwordSetupToken: tokenHash,
-      passwordSetupTokenExpires: expiresAt,
-    },
+  await updateUserById(userId, {
+    passwordSetupToken: tokenHash,
+    passwordSetupTokenExpires: expiresAt,
   });
 
   return { token, expiresAt };

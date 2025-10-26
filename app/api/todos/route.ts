@@ -1,10 +1,8 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { createTodo, findTodosAll } from '@/repositories/todos/todo.repository';
 
 export async function GET() {
   try {
-    const todos = await prisma.todo.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const todos = await findTodosAll({ createdAt: 'desc' });
     return new Response(JSON.stringify(todos), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -27,8 +25,8 @@ export async function POST(req: Request) {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    const newTodo = await prisma.todo.create({
-      data: { title: title.trim() },
+    const newTodo = await createTodo({
+      title: title.trim(),
     });
     return new Response(JSON.stringify(newTodo), {
       status: 200,

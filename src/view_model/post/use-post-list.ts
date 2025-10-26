@@ -1,8 +1,5 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { findPostsByInclude } from '@/repositories/posts/post.repository';
 
 export async function getPostList() {
-  return prisma.post.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { user: true },
-  });
+  return findPostsByInclude({ user: true }, { createdAt: 'desc' });
 }

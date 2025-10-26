@@ -1,4 +1,5 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { createSession } from '@/repositories/sessions/session.repository';
+import { upsertUserByEmail } from '@/repositories/users/user.repository';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { setCookie } from 'nookies';
 
@@ -8,26 +9,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // ✅ テストユーザー作成または取得
-  const testUser = await prisma.user.upsert({
-    where: { email: 'testuser@example.com' },
-    update: {},
-    create: {
+  const testUser = await upsertUserByEmail(
+    'testuser@example.com',
+    {},
+    {
       name: 'Test User',
       email: 'testuser@example.com',
       image: 'https://example.com/avatar.png',
-    },
-  });
+    }
+  );
 
   // ✅ セッション生成
   const sessionToken = `test-session-${Date.now()}`;
   const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30日間
 
-  await prisma.session.create({
-    data: {
-      sessionToken,
-      userId: testUser.id,
-      expires,
-    },
+  await createSession({
+    sessionToken,
+    expires,
+    user: { connect: { id: testUser.id } },
   });
 
   // ✅ セッションクッキーを発行（next-auth.session-token）

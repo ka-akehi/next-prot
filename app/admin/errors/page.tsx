@@ -1,5 +1,5 @@
 import { ErrorLogTable } from '@/components/errors/error-log-table';
-import { prisma } from '@infrastructure/persistence/prisma';
+import { findClientErrorLogs, findServerErrorLogs } from '@/repositories/error-logs/error-log.repository';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -8,14 +8,8 @@ export const metadata: Metadata = {
 
 export default async function AdminErrorPage() {
   const [serverErrors, clientErrors] = await Promise.all([
-    prisma.serverErrorLog.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    }),
-    prisma.clientErrorLog.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    }),
+    findServerErrorLogs({ take: 100 }, { createdAt: 'desc' }),
+    findClientErrorLogs({ take: 100 }, { createdAt: 'desc' }),
   ]);
 
   return (

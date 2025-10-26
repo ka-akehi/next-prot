@@ -1,12 +1,9 @@
-"use server";
+'use server';
 
-import { getAuthSession } from "@infrastructure/auth/auth";
-import {
-  GENERAL_ERROR_MESSAGES,
-  POST_ERROR_MESSAGES,
-} from "@domain/messages/error.messages";
-import { prisma } from "@infrastructure/persistence/prisma";
-import { logServerError } from "@/helpers/server-log.helpers";
+import { logServerError } from '@/helpers/server-log.helpers';
+import * as postRepository from '@/repositories/posts/post.repository';
+import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@domain/messages/error.messages';
+import { getAuthSession } from '@infrastructure/auth/auth';
 
 type CreatePostArgs = {
   content: string;
@@ -19,15 +16,13 @@ export async function createPost({ content, userId }: CreatePostArgs) {
       throw new Error(POST_ERROR_MESSAGES.emptyContent);
     }
 
-    const post = await prisma.post.create({
-      data: {
-        content,
-        userId, // ← ✅ ここで使われる
-      },
+    const post = await postRepository.createPost({
+      content,
+      user: { connect: { id: userId } }, // ← ✅ ここで使われる
     });
     return post;
   } catch (error) {
-    await logServerError(error, "createPost");
+    await logServerError(error, 'createPost');
     throw new Error(POST_ERROR_MESSAGES.createFailed);
   }
 }
@@ -38,16 +33,13 @@ export async function deletePost(postId: string) {
     throw new Error(GENERAL_ERROR_MESSAGES.authRequired);
   }
 
-  const post = await prisma.post.findUnique({
-    where: { id: postId },
-    select: { userId: true },
-  });
+  const post = await postRepository.findPost(postId, { userId: true });
 
   if (!post || post.userId !== session.user.id) {
     throw new Error(POST_ERROR_MESSAGES.deleteUnauthorized);
   }
 
-  await prisma.post.delete({ where: { id: postId } });
+  await postRepository.deletePostById(postId);
 }
 
 export async function updatePost(postId: string, newContent: string) {
@@ -56,17 +48,11 @@ export async function updatePost(postId: string, newContent: string) {
     throw new Error(GENERAL_ERROR_MESSAGES.authRequired);
   }
 
-  const post = await prisma.post.findUnique({
-    where: { id: postId },
-    select: { userId: true },
-  });
+  const post = await postRepository.findPost(postId, { userId: true });
 
   if (!post || post.userId !== session.user.id) {
     throw new Error(POST_ERROR_MESSAGES.updateUnauthorized);
   }
 
-  await prisma.post.update({
-    where: { id: postId },
-    data: { content: newContent },
-  });
+  await postRepository.updatePost(postId, { content: newContent });
 }

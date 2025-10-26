@@ -1,4 +1,5 @@
-import { prisma } from '@infrastructure/persistence/prisma';
+import { deletePostsById } from '@/repositories/posts/post.repository';
+import { findUserByEmail } from '@/repositories/users/user.repository';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,13 +13,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // テストユーザーのメールは /api/test-login と合わせる
   const email = 'testuser@example.com';
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await findUserByEmail(email);
   if (!user) return res.status(200).json({ cleared: 0 });
 
   // ユーザーの投稿を削除（テーブル名は実スキーマに合わせて）
-  const result = await prisma.post.deleteMany({
-    where: { userId: user.id },
-  });
+  const result = await deletePostsById(user.id);
 
   return res.status(200).json({ cleared: result.count });
 }

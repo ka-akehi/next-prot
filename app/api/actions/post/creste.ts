@@ -1,12 +1,12 @@
 "use server";
 
 import { POST_ERROR_MESSAGES } from "@domain/messages/error.messages";
-import { prisma } from "@infrastructure/persistence/prisma";
+import { createPost as createPostRecord } from "@/repositories/posts/post.repository";
 import { logServerError } from "@/helpers/server-log.helpers";
 
 export async function createPost(content: string) {
   try {
-    const post = await prisma.post.create({
+    const post = await createPostRecord({
       data: {
         content,
         userId: "dummy", // ここでエラーを発生させる例
