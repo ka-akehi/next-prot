@@ -1,5 +1,5 @@
 import * as postRepository from '@/repositories/posts/post.repository';
-import { createPost, updatePost } from '@/view_model/post/post-actions';
+import { createPost, deletePost, updatePost } from '@/view_model/post/post-actions';
 import { GENERAL_ERROR_MESSAGES, POST_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { getAuthSession } from '@infrastructure/auth/auth';
 import { describe, expect, it } from '@jest/globals';
@@ -88,7 +88,7 @@ describe('deletePostById', () => {
     // getAuthSession を未ログイン状態にモック
     (getAuthSession as jest.Mock).mockResolvedValueOnce(null);
 
-    await expect(postRepository.deletePostById('post-123')).rejects.toThrow(GENERAL_ERROR_MESSAGES.authRequired);
+    await expect(deletePost('post-123')).rejects.toThrow(GENERAL_ERROR_MESSAGES.authRequired);
   });
 
   it('削除権限がない場合に例外をスローする', async () => {
@@ -99,7 +99,21 @@ describe('deletePostById', () => {
 
     mockedPostRepository.findPost.mockResolvedValueOnce(mockPost);
 
-    await expect(postRepository.deletePostById('post-123')).rejects.toThrow(POST_ERROR_MESSAGES.deleteUnauthorized);
+    await expect(deletePost('post-123')).rejects.toThrow(POST_ERROR_MESSAGES.deleteUnauthorized);
+  });
+
+  it('正常に投稿を削除できる', async () => {
+    // getAuthSession をログイン済みユーザーにモック
+    (getAuthSession as jest.Mock).mockResolvedValueOnce({
+      user: { id: 'user-123' },
+    });
+
+    mockedPostRepository.findPost.mockResolvedValueOnce(mockPost);
+    mockedPostRepository.deletePostById.mockResolvedValueOnce(mockPost);
+
+    await expect(deletePost('post-123')).resolves.not.toThrow();
+
+    expect(mockedPostRepository.deletePostById).toHaveBeenCalledWith('post-123');
   });
 });
 
@@ -124,10 +138,6 @@ describe('updatePost', () => {
     mockedPostRepository.findPost.mockResolvedValueOnce(mockPost);
 
     await expect(updatePost('post-123', '新しい内容')).rejects.toThrow(POST_ERROR_MESSAGES.updateUnauthorized);
-  });
-
-  it('正常に投稿を更新できる', async () => {
-    //    await expect(updatePost('post-123', '新しい内容')).rejects.toThrow(POST_ERROR_MESSAGES.updateUnauthorized);
   });
 
   it('正常に投稿を更新できる', async () => {
