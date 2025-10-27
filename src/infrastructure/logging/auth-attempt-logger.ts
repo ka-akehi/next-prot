@@ -1,9 +1,7 @@
+import type { AuthAttemptLog, AuthAttemptResult } from '@/types/auth-attempt-log';
+import { extractClientIpFromHeaders, resolveHeader, type HeadersLike } from '@shared/network/extract-client-ip';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AuthAttemptLog, AuthAttemptResult } from '@/types/auth-attempt-log';
-
-type HeaderValue = string | string[] | undefined;
-type HeadersLike = Headers | Record<string, HeaderValue>;
 
 type RequestLike = {
   headers?: HeadersLike;
@@ -25,7 +23,7 @@ export async function logAuthAttempt(options: LogAuthAttemptOptions): Promise<vo
   const headers = options.req?.headers;
   const entry: AuthAttemptLog = {
     timestamp: new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-    ip: extractClientIp(headers),
+    ip: extractClientIpFromHeaders(headers),
     username: options.username,
     path: extractPath(options.req?.url),
     userAgent: resolveHeader(headers, 'user-agent') ?? 'unknown',
@@ -56,41 +54,6 @@ async function ensureLogDirectory() {
   const dirName = path.dirname(LOG_FILE_PATH);
   if (fs.existsSync(dirName)) return;
   await fs.promises.mkdir(dirName, { recursive: true });
-}
-
-function resolveHeader(headers: HeadersLike | undefined, name: string): string | undefined {
-  if (!headers) return undefined;
-  const normalizedName = name.toLowerCase();
-
-  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
-    return headers.get(normalizedName) ?? undefined;
-  }
-
-  const record = headers as Record<string, HeaderValue>;
-  const direct = record[normalizedName] ?? record[name];
-
-  if (Array.isArray(direct)) {
-    return direct[0];
-  }
-
-  return typeof direct === 'string' ? direct : undefined;
-}
-
-function extractClientIp(headers: HeadersLike | undefined): string {
-  const candidates = ['x-forwarded-for', 'x-real-ip', 'cf-connecting-ip'];
-
-  for (const key of candidates) {
-    const raw = resolveHeader(headers, key);
-    if (!raw) continue;
-    if (key === 'x-forwarded-for') {
-      const [first] = raw.split(',');
-      if (first && first.trim()) return first.trim();
-    } else {
-      return raw.trim();
-    }
-  }
-
-  return 'unknown';
 }
 
 function extractPath(url: string | null | undefined): string {

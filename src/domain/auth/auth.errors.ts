@@ -9,6 +9,7 @@ export const AUTH_ERROR_CODES = {
   AccessDenied: 'AccessDenied',
   TwoFactorRequired: 'TwoFactorRequired',
   InvalidTwoFactorCode: 'InvalidTwoFactorCode',
+  TooManyRequests: 'TooManyRequests',
 } as const;
 
 type AuthErrorCodesValue = (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];
@@ -24,6 +25,7 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCodesValue, string> = {
   [AUTH_ERROR_CODES.AccessDenied]: 'アクセスが拒否されました',
   [AUTH_ERROR_CODES.TwoFactorRequired]: '二段階認証コードを入力してください',
   [AUTH_ERROR_CODES.InvalidTwoFactorCode]: '二段階認証コードが正しくありません',
+  [AUTH_ERROR_CODES.TooManyRequests]: 'アクセスが集中しています。しばらく待ってから再実行してください',
 };
 
 export const DEFAULT_AUTH_ERROR_MESSAGE = 'ログインに失敗しました。時間をおいて再度お試しください。';
