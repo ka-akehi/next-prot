@@ -22,7 +22,7 @@ const LOG_FILE_PATH = path.join(process.cwd(), 'logs', 'auth-attempts.log');
 export async function logAuthAttempt(options: LogAuthAttemptOptions): Promise<void> {
   const headers = options.req?.headers;
   const entry: AuthAttemptLog = {
-    timestamp: new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+    timestamp: new Date().toISOString(),
     ip: extractClientIpFromHeaders(headers),
     username: options.username,
     path: extractPath(options.req?.url),
