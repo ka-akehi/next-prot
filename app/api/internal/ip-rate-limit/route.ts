@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: { code: 'UNAUTHORIZED' } }, { status: 401 });
   }
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
   let { ip } = (body ?? {}) as { ip?: string };
   if (!ip) {
     return NextResponse.json({ ok: false, error: { code: 'INVALID_PAYLOAD' } }, { status: 400 });
