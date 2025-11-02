@@ -9,7 +9,7 @@ import {
 import type { User } from '@prisma/client';
 import { compare } from 'bcryptjs';
 
-const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const MAX_FAILED_LOGIN_ATTEMPTS = 500;
 const ACCOUNT_LOCK_DURATION_MS = 1000 * 60 * 15; // 15 minutes
 
 export async function fetchUserForEmail(normalizedEmail: string, rawEmail: string): Promise<User> {

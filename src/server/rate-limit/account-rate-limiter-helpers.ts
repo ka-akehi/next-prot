@@ -54,7 +54,7 @@ export function buildResult(
   retryAfterSeconds: number
 ): AccountRateLimitResult {
   const remaining = Math.max(config.threshold - failures, 0);
-  const allowed = retryAfterSeconds <= 0;
+  const allowed = retryAfterSeconds < 1;
 
   return {
     allowed,
@@ -77,7 +77,7 @@ export async function getRecentFailureCount(
   await client.zRemRangeByScore(failuresKey, 0, windowStart);
   const count = await client.zCard(failuresKey);
 
-  if (count === 0) {
+  if (count < 1) {
     await client.del(failuresKey);
   }
 
@@ -113,7 +113,13 @@ export async function ensureLockTtl(
   return currentPositive;
 }
 
-export async function ensurePenaltyTtl(client: RedisClient, penaltyKey: string, ttlSeconds: number): Promise<number> {
+export async function ensurePenaltyTtl(
+  client: RedisClient,
+  penaltyKey: string,
+  ttlSeconds: number,
+  options?: { allowIncrease?: boolean }
+): Promise<number> {
+  const { allowIncrease = true } = options ?? {};
   const target = Math.max(0, ttlSeconds);
 
   if (target < 1) {
@@ -124,6 +130,13 @@ export async function ensurePenaltyTtl(client: RedisClient, penaltyKey: string, 
   const current = await client.ttl(penaltyKey);
   const currentPositive = current > 0 ? current : 0;
   if (currentPositive === target) {
+    return currentPositive;
+  }
+
+  const shouldUpdate = currentPositive === 0 || target < currentPositive;
+  const canIncrease = allowIncrease && target > currentPositive;
+
+  if (!shouldUpdate && !canIncrease) {
     return currentPositive;
   }
 
@@ -157,10 +170,10 @@ export function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 12);
 }
 
-export function computePenaltyTargetSeconds(maxSeconds: number, now: Date = new Date()): number {
+export function computePenaltyTargetSeconds(maxSeconds: number): number {
+  const now = new Date();
   const secondsUntilMidnight = secondsUntilNextJstMidnight(now);
-  const cappedByConfig = Math.min(secondsUntilMidnight, maxSeconds);
-  return Math.max(1, cappedByConfig);
+  return Math.min(secondsUntilMidnight, maxSeconds);
 }
 
 function secondsUntilNextJstMidnight(now: Date): number {

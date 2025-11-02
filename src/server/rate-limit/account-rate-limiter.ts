@@ -28,22 +28,20 @@ export async function enforceAccountRateLimit(identifier: string): Promise<Accou
     getRecentFailureCount(client, normalizedIdentifier, config.maxWindowSeconds),
   ]);
 
+  const lockActive = currentLockTtlRaw > 0;
   const penaltyActive = penaltyTtlRaw > 0;
-  const penaltyTargetSeconds = penaltyActive ? computePenaltyTargetSeconds(config.penaltyTtlSeconds) : 0;
-  const lockTarget = penaltyActive ? Math.min(config.maxWindowSeconds, penaltyTargetSeconds) : 0;
+  let lockTtl = lockActive ? currentLockTtlRaw : 0;
 
   if (penaltyActive) {
-    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds);
+    const penaltyTargetSeconds = computePenaltyTargetSeconds(config.penaltyTtlSeconds);
+    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds, { allowIncrease: false });
+
+    if (lockActive) {
+      lockTtl = await ensureLockTtl(client, lockKey, config.maxWindowSeconds, true);
+    }
   }
 
-  const ensuredLock = penaltyActive
-    ? await ensureLockTtl(client, lockKey, lockTarget, true)
-    : Math.max(0, currentLockTtlRaw);
-
-  const retryAfterSeconds = penaltyActive ? (ensuredLock > 0 ? ensuredLock : lockTarget) : ensuredLock;
-  const effectiveFailures = penaltyActive ? Math.max(consecutiveFailures, config.threshold + 1) : consecutiveFailures;
-
-  return buildResult(config, effectiveFailures, retryAfterSeconds);
+  return buildResult(config, consecutiveFailures, lockTtl);
 }
 
 export async function recordAccountFailure(identifier: string): Promise<AccountRateLimitResult> {
@@ -53,7 +51,7 @@ export async function recordAccountFailure(identifier: string): Promise<AccountR
   const lockKey = buildLockKey(normalizedIdentifier);
   const penaltyKey = buildPenaltyKey(normalizedIdentifier);
 
-  const penaltyTtlBefore = await client.ttl(penaltyKey);
+  const [penaltyTtlBefore, lockTtlBeforeRaw] = await Promise.all([client.ttl(penaltyKey), client.ttl(lockKey)]);
   const penaltyTargetSeconds = computePenaltyTargetSeconds(config.penaltyTtlSeconds);
 
   const now = Date.now();
@@ -67,40 +65,24 @@ export async function recordAccountFailure(identifier: string): Promise<AccountR
   const consecutiveFailures = await client.zCard(failuresKey);
 
   const wasPenaltyActive = penaltyTtlBefore > 0;
-  let lockTtl = wasPenaltyActive
-    ? await ensureLockTtl(client, lockKey, Math.min(config.maxWindowSeconds, penaltyTargetSeconds), true)
-    : 0;
+  const wasLockActive = lockTtlBeforeRaw > 0;
+  let lockTtl = wasLockActive ? lockTtlBeforeRaw : 0;
 
   if (wasPenaltyActive) {
-    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds);
-  }
-
-  if (consecutiveFailures > config.threshold) {
+    lockTtl = await ensureLockTtl(client, lockKey, config.maxWindowSeconds, true);
+    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds, { allowIncrease: false });
+  } else if (consecutiveFailures > config.threshold) {
     const calculatedBackoff = calculateBackoffSeconds(consecutiveFailures, config);
-    lockTtl = Math.max(lockTtl, await ensureLockTtl(client, lockKey, calculatedBackoff));
+    const overMaxWindow = calculatedBackoff >= config.maxWindowSeconds;
+    const setLockTtlSeconds = overMaxWindow ? config.maxWindowSeconds : calculatedBackoff;
+    lockTtl = await ensureLockTtl(client, lockKey, setLockTtlSeconds);
 
-    if (calculatedBackoff >= config.maxWindowSeconds) {
+    if (overMaxWindow) {
       await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds);
-      lockTtl = Math.max(
-        lockTtl,
-        await ensureLockTtl(client, lockKey, Math.min(config.maxWindowSeconds, penaltyTargetSeconds), true)
-      );
     }
   }
 
-  const penaltyActive = wasPenaltyActive || (await client.ttl(penaltyKey)) > 0;
-
-  if (penaltyActive) {
-    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds);
-    lockTtl = Math.max(
-      lockTtl,
-      await ensureLockTtl(client, lockKey, Math.min(config.maxWindowSeconds, penaltyTargetSeconds), true)
-    );
-  }
-
-  const effectiveFailures = penaltyActive ? config.threshold + 1 : consecutiveFailures;
-
-  return buildResult(config, effectiveFailures, lockTtl);
+  return buildResult(config, consecutiveFailures, lockTtl);
 }
 
 export async function resetAccountRateLimit(identifier: string): Promise<void> {
