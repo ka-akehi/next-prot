@@ -8,7 +8,7 @@ export type AccountRateLimitConfig = {
 const DEFAULT_THRESHOLD = 5;
 const DEFAULT_BASE_WINDOW_SECONDS = 30;
 const DEFAULT_MAX_WINDOW_SECONDS = 3600;
-const DEFAULT_PENALTY_TTL_SECONDS = 60 * 60 * 24; // 24 hours
+const DEFAULT_PENALTY_TTL_SECONDS = 60 * 60 * 12; // 12 hours
 
 let cachedConfig: AccountRateLimitConfig | null = null;
 

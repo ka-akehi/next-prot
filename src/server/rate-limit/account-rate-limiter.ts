@@ -4,7 +4,6 @@ import {
   buildPenaltyKey,
   buildResult,
   calculateBackoffSeconds,
-  computePenaltyTargetSeconds,
   ensureLockTtl,
   ensurePenaltyTtl,
   getRecentFailureCount,
@@ -33,8 +32,7 @@ export async function enforceAccountRateLimit(identifier: string): Promise<Accou
   let lockTtl = lockActive ? currentLockTtlRaw : 0;
 
   if (penaltyActive) {
-    const penaltyTargetSeconds = computePenaltyTargetSeconds(config.penaltyTtlSeconds);
-    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds, { allowIncrease: false });
+    await ensurePenaltyTtl(client, penaltyKey, config.penaltyTtlSeconds);
 
     if (lockActive) {
       lockTtl = await ensureLockTtl(client, lockKey, config.maxWindowSeconds, true);
@@ -52,7 +50,6 @@ export async function recordAccountFailure(identifier: string): Promise<AccountR
   const penaltyKey = buildPenaltyKey(normalizedIdentifier);
 
   const [penaltyTtlBefore, lockTtlBeforeRaw] = await Promise.all([client.ttl(penaltyKey), client.ttl(lockKey)]);
-  const penaltyTargetSeconds = computePenaltyTargetSeconds(config.penaltyTtlSeconds);
 
   const now = Date.now();
   const windowMs = config.baseWindowSeconds * 1000;
@@ -70,7 +67,7 @@ export async function recordAccountFailure(identifier: string): Promise<AccountR
 
   if (wasPenaltyActive) {
     lockTtl = await ensureLockTtl(client, lockKey, config.maxWindowSeconds, true);
-    await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds, { allowIncrease: false });
+    await ensurePenaltyTtl(client, penaltyKey, config.penaltyTtlSeconds, true);
   } else if (consecutiveFailures > config.threshold) {
     const calculatedBackoff = calculateBackoffSeconds(consecutiveFailures, config);
     const overMaxWindow = calculatedBackoff >= config.maxWindowSeconds;
@@ -78,7 +75,7 @@ export async function recordAccountFailure(identifier: string): Promise<AccountR
     lockTtl = await ensureLockTtl(client, lockKey, setLockTtlSeconds);
 
     if (overMaxWindow) {
-      await ensurePenaltyTtl(client, penaltyKey, penaltyTargetSeconds);
+      await ensurePenaltyTtl(client, penaltyKey, config.penaltyTtlSeconds, true);
     }
   }
 

@@ -14,8 +14,8 @@
    - Prisma 側の `loginAttempts` / `lockedUntil` は一時的に併存しつつ、最終的にはバックアップ用途に限定。
 2. **指数バックオフと累積ペナルティの設計**
    - 例: `retryAfter = min(baseWindow * 2^(failCount - threshold), maxWindow)`。
-   - 最大ロック時間（例: 3600 秒）に達したらペナルティキーをセットし、TTL は「JST の次回 0:00 まで」と `ACCOUNT_RATE_LIMIT_PENALTY_TTL` の短い方に揃える。
-   - 日付を跨いだタイミングでペナルティが自動解除され、その後は通常カウントへ復帰する。
+   - 最大ロック時間（例: 3600 秒）に達したらペナルティキーをセットし、TTL は 12 時間と `ACCOUNT_RATE_LIMIT_PENALTY_TTL` の短い方に揃える。ペナルティ中に失敗が続いた場合はその都度同じ値で貼り直す。
+   - ペナルティは最大 12 時間継続し、それ以降は通常カウントへ復帰する。
 3. **レートリミット結果を統一エラーコードへマッピング**
    - バックオフ発動時は `AuthAttemptResult` を `locked` または `rate-limited` として `AUTH_ERROR_CODES.TooManyRequests` を返却。
    - ログ (`logs/auth-attempts.log`) には `context.retryAfterSeconds` などを含めて解析性を高める。

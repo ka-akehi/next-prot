@@ -25,7 +25,7 @@ const PENALTY_KEY_PREFIX = 'rate:account:penalty';
 const LOCK_VALUE = 'locked';
 const PENALTY_VALUE = 'penalty';
 
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const PENALTY_DURATION_SECONDS = 12 * 60 * 60;
 
 export async function setupRateLimiter(identifier: string): Promise<RateLimiterContext> {
   const normalizedIdentifier = normalizeIdentifier(identifier);
@@ -117,9 +117,8 @@ export async function ensurePenaltyTtl(
   client: RedisClient,
   penaltyKey: string,
   ttlSeconds: number,
-  options?: { allowIncrease?: boolean }
+  allowIncrease?: boolean
 ): Promise<number> {
-  const { allowIncrease = true } = options ?? {};
   const target = Math.max(0, ttlSeconds);
 
   if (target < 1) {
@@ -128,16 +127,16 @@ export async function ensurePenaltyTtl(
   }
 
   const current = await client.ttl(penaltyKey);
-  const currentPositive = current > 0 ? current : 0;
-  if (currentPositive === target) {
-    return currentPositive;
+  const currentPenaltySeconds = current > 0 ? current : 0;
+  if (currentPenaltySeconds === target) {
+    return currentPenaltySeconds;
   }
 
-  const shouldUpdate = currentPositive === 0 || target < currentPositive;
-  const canIncrease = allowIncrease && target > currentPositive;
+  const shouldUpdate = currentPenaltySeconds === 0 || target < currentPenaltySeconds;
+  const canIncrease = allowIncrease && target > currentPenaltySeconds;
 
   if (!shouldUpdate && !canIncrease) {
-    return currentPositive;
+    return currentPenaltySeconds;
   }
 
   await client.set(penaltyKey, PENALTY_VALUE, { EX: target });
@@ -168,26 +167,4 @@ export function normalizeIdentifier(identifier: string): string {
 
 export function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 12);
-}
-
-export function computePenaltyTargetSeconds(maxSeconds: number): number {
-  const now = new Date();
-  const secondsUntilMidnight = secondsUntilNextJstMidnight(now);
-  return Math.min(secondsUntilMidnight, maxSeconds);
-}
-
-function secondsUntilNextJstMidnight(now: Date): number {
-  const nowUtcMs = now.getTime();
-  const jstMs = nowUtcMs + JST_OFFSET_MS;
-  const jstDate = new Date(jstMs);
-
-  const nextMidnightUtcMs =
-    Date.UTC(jstDate.getUTCFullYear(), jstDate.getUTCMonth(), jstDate.getUTCDate() + 1, 0, 0, 0, 0) - JST_OFFSET_MS;
-
-  const diffMs = nextMidnightUtcMs - nowUtcMs;
-  if (diffMs <= 0) {
-    return 1;
-  }
-
-  return Math.ceil(diffMs / 1000);
 }
