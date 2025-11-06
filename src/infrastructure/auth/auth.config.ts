@@ -1,11 +1,14 @@
 import {
+  buildLogContext,
   ensureAccountNotLocked,
   ensurePasswordIsConfigured,
   fetchUserForEmail,
   mapErrorToAttemptResult,
   markTwoFactorPending,
+  RateLimitedError,
   resetLoginStateIfExpired,
   verifyPasswordOrThrow,
+  type VerifyPasswordResult,
 } from '@/helpers/auth.helpers';
 import { findUserById } from '@/repositories/users/user.repository';
 import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
@@ -46,7 +49,6 @@ export const authConfig: NextAuthOptions = {
         const callbackUrl = credentials?.callbackUrl ?? DEFAULT_CALLBACK_URL;
         const normalizedEmail = rawEmail.toLowerCase();
         const usernameForLog = normalizedEmail || rawEmail || null;
-        const logContext = { provider: 'credentials' } as const;
 
         try {
           if (!rawEmail || !password) {
@@ -57,14 +59,15 @@ export const authConfig: NextAuthOptions = {
           user = await resetLoginStateIfExpired(user);
           await ensurePasswordIsConfigured(user, normalizedEmail, callbackUrl);
           ensureAccountNotLocked(user);
-          user = await verifyPasswordOrThrow(user, password);
+          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password, normalizedEmail);
+          user = verification.user;
           user = await markTwoFactorPending(user);
 
           await logAuthAttempt({
             username: usernameForLog,
             result: 'success',
             req,
-            context: logContext,
+            context: buildLogContext(verification.accountRateLimit),
           });
 
           return {
@@ -74,12 +77,14 @@ export const authConfig: NextAuthOptions = {
             twoFactorEnabled: user.twoFactorEnabled,
           };
         } catch (error) {
+          const rateLimitFromError = (error as RateLimitedError)?.accountRateLimit;
+
           await logAuthAttempt({
             username: usernameForLog,
             result: mapErrorToAttemptResult(error),
             reason: error instanceof Error ? error.message : 'unknown-error',
             req,
-            context: logContext,
+            context: buildLogContext(rateLimitFromError),
           });
 
           throw error;

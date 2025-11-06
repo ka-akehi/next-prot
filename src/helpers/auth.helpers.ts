@@ -1,3 +1,10 @@
+import { resetLoginState, verifyPassword } from '@/helpers/auth/password';
+import {
+  createRateLimitPipeline,
+  ensureRateLimitAllowed,
+  resetRateLimitState,
+  type AccountRateLimitLogContext,
+} from '@/helpers/auth/rate-limit';
 import { findUserByEmailCandidates, updateUserById } from '@/repositories/users/user.repository';
 import type { AuthAttemptResult } from '@/types/auth-attempt-log';
 import { issuePasswordSetupToken } from '@application/auth/password-token';
@@ -7,11 +14,14 @@ import {
   createPasswordRequiredError,
 } from '@domain/auth/auth.errors';
 import type { User } from '@prisma/client';
-import { compare } from 'bcryptjs';
 
-const MAX_FAILED_LOGIN_ATTEMPTS = 500;
-const ACCOUNT_LOCK_DURATION_MS = 1000 * 60 * 15; // 15 minutes
+export type VerifyPasswordResult = {
+  user: User;
+  accountRateLimit?: AccountRateLimitLogContext;
+};
 
+export { buildLogContext } from '@/helpers/auth/rate-limit';
+export type { AccountRateLimitLogContext, RateLimitedError } from '@/helpers/auth/rate-limit';
 export async function fetchUserForEmail(normalizedEmail: string, rawEmail: string): Promise<User> {
   const user = await findUserByEmailCandidates([normalizedEmail, rawEmail]);
 
@@ -45,8 +55,9 @@ export async function ensurePasswordIsConfigured(
     return;
   }
 
+  const emailForSetup = normalizedEmail || user.email || '';
   const { token } = await issuePasswordSetupToken(user.id);
-  const setupUrl = buildPasswordSetupUrl(callbackUrl, normalizedEmail, token);
+  const setupUrl = buildPasswordSetupUrl(callbackUrl, emailForSetup, token);
 
   throw new Error(createPasswordRequiredError(setupUrl));
 }
@@ -59,18 +70,23 @@ export function ensureAccountNotLocked(user: User): void {
   }
 }
 
-export async function verifyPasswordOrThrow(user: User, password: string): Promise<User> {
-  const isValid = await compare(password, user.passwordHash ?? '');
+export async function verifyPasswordOrThrow(
+  user: User,
+  password: string,
+  rateLimitIdentifier?: string
+): Promise<VerifyPasswordResult> {
+  const identifier = resolveRateLimitIdentifier(rateLimitIdentifier, user);
+  const pipeline = await createRateLimitPipeline(identifier);
 
-  if (!isValid) {
-    return handleFailedPassword(user);
-  }
+  ensureRateLimitAllowed(pipeline);
+  const verifiedUser = await verifyPassword(user, password, pipeline);
+  const normalizedUser = await resetLoginState(verifiedUser);
+  const resetContext = await resetRateLimitState(pipeline);
 
-  if (user.loginAttempts !== 0 || user.lockedUntil) {
-    return updateUserById(user.id, { loginAttempts: 0, lockedUntil: null });
-  }
-
-  return user;
+  return {
+    user: normalizedUser,
+    accountRateLimit: resetContext ?? pipeline.enforceContext,
+  };
 }
 
 export async function markTwoFactorPending(user: User): Promise<User> {
@@ -104,30 +120,33 @@ export function mapErrorToAttemptResult(error: unknown): AuthAttemptResult {
     return 'mfa-required';
   }
 
+  if (message === AUTH_ERROR_CODES.TooManyRequests) {
+    return 'rate-limited';
+  }
+
   return 'error';
 }
 
-async function handleFailedPassword(user: User): Promise<never> {
-  const nextAttempts = user.loginAttempts + 1;
+function buildPasswordSetupUrl(callbackUrl: string, email: string, token: string): string {
+  const trimmedEmail = email.trim();
 
-  if (nextAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
-    const lockExpiresAt = new Date(Date.now() + ACCOUNT_LOCK_DURATION_MS);
-
-    await updateUserById(user.id, {
-      loginAttempts: 0,
-      lockedUntil: lockExpiresAt,
-    });
-
-    throw new Error(AUTH_ERROR_CODES.AccountTemporarilyLocked);
+  if (!trimmedEmail) {
+    throw new Error(AUTH_ERROR_CODES.InvalidCredentials);
   }
 
-  await updateUserById(user.id, { loginAttempts: nextAttempts });
-
-  throw new Error(AUTH_ERROR_CODES.InvalidCredentials);
-}
-
-function buildPasswordSetupUrl(callbackUrl: string, normalizedEmail: string, token: string): string {
   return `/account/password/new?redirect=${encodeURIComponent(callbackUrl)}&token=${encodeURIComponent(
     token
-  )}&email=${encodeURIComponent(normalizedEmail)}`;
+  )}&email=${encodeURIComponent(trimmedEmail)}`;
+}
+
+function resolveRateLimitIdentifier(identifier: string | undefined, user: User): string {
+  if (identifier && identifier.trim().length > 0) {
+    return identifier.trim().toLowerCase();
+  }
+
+  if (user.email && user.email.trim().length > 0) {
+    return user.email.trim().toLowerCase();
+  }
+
+  return `user:${user.id}`;
 }
