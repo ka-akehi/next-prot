@@ -49,3 +49,4 @@ package-lock.json
 # auth/log capture
 /logs/*
 !/logs/.gitkeep
+app/api/internal/account-rate-limit/reset/route.ts

@@ -1,5 +1,5 @@
-import { buildLogContext, verifyPasswordOrThrow } from '@/helpers/auth.helpers';
-import type { AccountRateLimitLogContext, RateLimitPipeline, RateLimitedError } from '@/helpers/auth/rate-limit';
+import { verifyPasswordOrThrow } from '@/helpers/auth.helpers';
+import type { RateLimitedError } from '@/helpers/auth/rate-limit';
 import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
 import { describe, expect, it, jest } from '@jest/globals';
 import type { User } from '@prisma/client';
@@ -10,7 +10,7 @@ jest.mock('@/helpers/auth/rate-limit', () => {
   return {
     ...actual,
     createRateLimitPipeline: jest.fn(),
-    ensureRateLimitAllowed: jest.fn(),
+    recordRateLimitFailure: jest.fn(),
     resetRateLimitState: jest.fn(),
     buildLogContext: jest.fn(actual.buildLogContext),
   };
@@ -23,16 +23,18 @@ jest.mock('@/helpers/auth/password', () => ({
 
 import { resetLoginState, verifyPassword } from '@/helpers/auth/password';
 import {
-  buildLogContext as buildLogContextImpl,
+  buildLogContext,
   createRateLimitPipeline,
-  ensureRateLimitAllowed,
+  recordRateLimitFailure,
   resetRateLimitState,
+  type AccountRateLimitLogContext,
+  type RateLimitPipeline,
 } from '@/helpers/auth/rate-limit';
 
 const createRateLimitPipelineMock = createRateLimitPipeline as jest.MockedFunction<typeof createRateLimitPipeline>;
-const ensureRateLimitAllowedMock = ensureRateLimitAllowed as jest.MockedFunction<typeof ensureRateLimitAllowed>;
+const recordRateLimitFailureMock = recordRateLimitFailure as jest.MockedFunction<typeof recordRateLimitFailure>;
 const resetRateLimitStateMock = resetRateLimitState as jest.MockedFunction<typeof resetRateLimitState>;
-const buildLogContextMock = buildLogContextImpl as jest.MockedFunction<typeof buildLogContextImpl>;
+const buildLogContextMock = buildLogContext as jest.MockedFunction<typeof buildLogContext>;
 const verifyPasswordMock = verifyPassword as jest.MockedFunction<typeof verifyPassword>;
 const resetLoginStateMock = resetLoginState as jest.MockedFunction<typeof resetLoginState>;
 
@@ -74,6 +76,16 @@ describe('verifyPasswordOrThrow', () => {
       fallbackActive: false,
       enforceContext: allowContext,
     } satisfies RateLimitPipeline);
+    recordRateLimitFailureMock.mockResolvedValue({
+      action: 'record',
+      identifier: allowContext.identifier,
+      result: {
+        ...allowContext.result,
+        allowed: false,
+        remaining: 0,
+        retryAfterSeconds: 60,
+      },
+    });
     resetRateLimitStateMock.mockResolvedValue(undefined);
     verifyPasswordMock.mockResolvedValue(baseUser);
     resetLoginStateMock.mockResolvedValue(baseUser);
@@ -92,17 +104,25 @@ describe('verifyPasswordOrThrow', () => {
       enforceContext: denyContext,
     });
 
-    ensureRateLimitAllowedMock.mockImplementationOnce(() => {
-      const error = new Error(AUTH_ERROR_CODES.TooManyRequests) as RateLimitedError;
-      error.accountRateLimit = denyContext;
-      throw error;
+    recordRateLimitFailureMock.mockResolvedValueOnce({
+      action: 'record',
+      identifier: denyContext.identifier,
+      result: { ...denyContext.result },
     });
 
     await expect(verifyPasswordOrThrow({ ...baseUser }, 'password')).rejects.toMatchObject({
-      message: AUTH_ERROR_CODES.TooManyRequests,
-      accountRateLimit: denyContext,
+      message: AUTH_ERROR_CODES.TooManyRequestsShortWait,
+      accountRateLimit: {
+        action: 'record',
+        identifier: denyContext.identifier,
+        result: { ...denyContext.result },
+      },
     });
     expect(verifyPasswordMock).not.toHaveBeenCalled();
+    expect(recordRateLimitFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({ identifier: denyContext.identifier })
+    );
+    expect(resetRateLimitStateMock).not.toHaveBeenCalled();
   });
 
   it('propagates password verification errors', async () => {
@@ -113,13 +133,13 @@ describe('verifyPasswordOrThrow', () => {
     };
 
     verifyPasswordMock.mockImplementationOnce(async () => {
-      const error = new Error(AUTH_ERROR_CODES.TooManyRequests) as RateLimitedError;
+      const error = new Error(AUTH_ERROR_CODES.TooManyRequestsShortWait) as RateLimitedError;
       error.accountRateLimit = rateLimitContext;
       throw error;
     });
 
     await expect(verifyPasswordOrThrow({ ...baseUser }, 'password')).rejects.toMatchObject({
-      message: AUTH_ERROR_CODES.TooManyRequests,
+      message: AUTH_ERROR_CODES.TooManyRequestsShortWait,
       accountRateLimit: rateLimitContext,
     });
     expect(resetRateLimitStateMock).not.toHaveBeenCalled();
@@ -142,7 +162,6 @@ describe('verifyPasswordOrThrow', () => {
     expect(result.user.loginAttempts).toBe(0);
     expect(result.accountRateLimit).toBe(resetContext);
     expect(createRateLimitPipelineMock).toHaveBeenCalledWith(allowContext.identifier);
-    expect(ensureRateLimitAllowedMock).toHaveBeenCalled();
     expect(resetRateLimitStateMock).toHaveBeenCalled();
   });
 

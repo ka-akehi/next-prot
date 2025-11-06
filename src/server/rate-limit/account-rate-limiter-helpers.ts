@@ -25,8 +25,6 @@ const PENALTY_KEY_PREFIX = 'rate:account:penalty';
 const LOCK_VALUE = 'locked';
 const PENALTY_VALUE = 'penalty';
 
-const PENALTY_DURATION_SECONDS = 12 * 60 * 60;
-
 export async function setupRateLimiter(identifier: string): Promise<RateLimiterContext> {
   const normalizedIdentifier = normalizeIdentifier(identifier);
   const client = await ensureRedisConnection();

@@ -1,6 +1,6 @@
 import { ensureRedisConnection } from '@/server/redis';
 
-const MAX_ATTEMPTS = process.env.IP_RATE_LIMIT_MAX_ATTEMPTS ?? 10;
+const MAX_ATTEMPTS = process.env.IP_RATE_LIMIT_MAX_ATTEMPTS ?? 100;
 const WINDOW_SECONDS = process.env.IP_RATE_LIMIT_WINDOW_SECONDS ?? 60;
 
 export type RateLimitResult = {

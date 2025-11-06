@@ -1,9 +1,11 @@
 import { resetLoginState, verifyPassword } from '@/helpers/auth/password';
 import {
   createRateLimitPipeline,
-  ensureRateLimitAllowed,
+  recordRateLimitFailure,
   resetRateLimitState,
+  resolveRateLimitErrorCode,
   type AccountRateLimitLogContext,
+  type RateLimitedError,
 } from '@/helpers/auth/rate-limit';
 import { findUserByEmailCandidates, updateUserById } from '@/repositories/users/user.repository';
 import type { AuthAttemptResult } from '@/types/auth-attempt-log';
@@ -20,8 +22,6 @@ export type VerifyPasswordResult = {
   accountRateLimit?: AccountRateLimitLogContext;
 };
 
-export { buildLogContext } from '@/helpers/auth/rate-limit';
-export type { AccountRateLimitLogContext, RateLimitedError } from '@/helpers/auth/rate-limit';
 export async function fetchUserForEmail(normalizedEmail: string, rawEmail: string): Promise<User> {
   const user = await findUserByEmailCandidates([normalizedEmail, rawEmail]);
 
@@ -70,15 +70,19 @@ export function ensureAccountNotLocked(user: User): void {
   }
 }
 
-export async function verifyPasswordOrThrow(
-  user: User,
-  password: string,
-  rateLimitIdentifier?: string
-): Promise<VerifyPasswordResult> {
-  const identifier = resolveRateLimitIdentifier(rateLimitIdentifier, user);
+export async function verifyPasswordOrThrow(user: User, password: string): Promise<VerifyPasswordResult> {
+  const identifier = resolveRateLimitIdentifier(user);
   const pipeline = await createRateLimitPipeline(identifier);
 
-  ensureRateLimitAllowed(pipeline);
+  const enforceContext = pipeline.enforceContext;
+  if (enforceContext?.result && !enforceContext.result.allowed) {
+    const recordContext = await recordRateLimitFailure(pipeline);
+    const errorCode = resolveRateLimitErrorCode(recordContext.result.retryAfterSeconds);
+    const error = new Error(errorCode) as RateLimitedError;
+    error.accountRateLimit = recordContext;
+    throw error;
+  }
+
   const verifiedUser = await verifyPassword(user, password, pipeline);
   const normalizedUser = await resetLoginState(verifiedUser);
   const resetContext = await resetRateLimitState(pipeline);
@@ -120,7 +124,12 @@ export function mapErrorToAttemptResult(error: unknown): AuthAttemptResult {
     return 'mfa-required';
   }
 
-  if (message === AUTH_ERROR_CODES.TooManyRequests) {
+  if (
+    message === AUTH_ERROR_CODES.TooManyRequests ||
+    message === AUTH_ERROR_CODES.TooManyRequestsShortWait ||
+    message === AUTH_ERROR_CODES.TooManyRequestsMediumWait ||
+    message === AUTH_ERROR_CODES.TooManyRequestsExtendedWait
+  ) {
     return 'rate-limited';
   }
 
@@ -139,11 +148,7 @@ function buildPasswordSetupUrl(callbackUrl: string, email: string, token: string
   )}&email=${encodeURIComponent(trimmedEmail)}`;
 }
 
-function resolveRateLimitIdentifier(identifier: string | undefined, user: User): string {
-  if (identifier && identifier.trim().length > 0) {
-    return identifier.trim().toLowerCase();
-  }
-
+function resolveRateLimitIdentifier(user: User): string {
   if (user.email && user.email.trim().length > 0) {
     return user.email.trim().toLowerCase();
   }

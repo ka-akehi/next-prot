@@ -10,7 +10,7 @@ import {
   recordLocalAccountFailure,
   resetLocalAccountRateLimit,
 } from '@/server/rate-limit/account-rate-limiter-fallback';
-import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
+import { AUTH_ERROR_CODES, type AuthErrorCode } from '@domain/auth/auth.errors';
 
 export type AccountRateLimitLogContext = {
   action: 'enforce' | 'record' | 'reset';
@@ -48,19 +48,6 @@ export async function createRateLimitPipeline(identifier: string): Promise<RateL
   }
 
   return pipeline;
-}
-
-export function ensureRateLimitAllowed(pipeline: RateLimitPipeline): void {
-  const context = pipeline.enforceContext;
-  if (!context) {
-    return;
-  }
-
-  if (!context.result.allowed) {
-    const error = new Error(AUTH_ERROR_CODES.TooManyRequests) as RateLimitedError;
-    attachRateLimitContext(error, context);
-    throw error;
-  }
 }
 
 export async function recordRateLimitFailure(pipeline: RateLimitPipeline): Promise<AccountRateLimitLogContext> {
@@ -118,8 +105,20 @@ export function buildLogContext(
   return context;
 }
 
-export function attachRateLimitContext(target: RateLimitedError, context: AccountRateLimitLogContext): void {
-  target.accountRateLimit = context;
+export function resolveRateLimitErrorCode(retryAfterSeconds?: number): AuthErrorCode {
+  if (!retryAfterSeconds || retryAfterSeconds < 1) {
+    return AUTH_ERROR_CODES.TooManyRequests;
+  }
+
+  if (retryAfterSeconds <= 5 * 60) {
+    return AUTH_ERROR_CODES.TooManyRequestsShortWait;
+  }
+
+  if (retryAfterSeconds < 60 * 60) {
+    return AUTH_ERROR_CODES.TooManyRequestsMediumWait;
+  }
+
+  return AUTH_ERROR_CODES.TooManyRequestsExtendedWait;
 }
 
 function createDefaultRateLimitResultForReset(): AccountRateLimitResult {

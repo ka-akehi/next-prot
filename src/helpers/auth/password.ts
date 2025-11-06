@@ -1,6 +1,7 @@
 import {
-  attachRateLimitContext,
+  AccountRateLimitLogContext,
   recordRateLimitFailure,
+  resolveRateLimitErrorCode,
   type RateLimitedError,
   type RateLimitPipeline,
 } from '@/helpers/auth/rate-limit';
@@ -30,20 +31,23 @@ export async function resetLoginState(user: User): Promise<User> {
   return updateUserById(user.id, { loginAttempts: 0, lockedUntil: null });
 }
 
-async function handleInvalidPassword(user: User, pipeline: RateLimitPipeline): Promise<never> {
+export async function handleInvalidPassword(user: User, pipeline: RateLimitPipeline): Promise<never> {
+  let recordContext: AccountRateLimitLogContext;
+
   try {
-    const recordContext = await recordRateLimitFailure(pipeline);
-    const errorCode = recordContext.result.allowed
-      ? AUTH_ERROR_CODES.InvalidCredentials
-      : AUTH_ERROR_CODES.TooManyRequests;
-    const error = new Error(errorCode) as RateLimitedError;
-    attachRateLimitContext(error, recordContext);
-    throw error;
+    recordContext = await recordRateLimitFailure(pipeline);
   } catch (error) {
     console.error('[auth] rate limit failure recording failed, falling back to prisma counter', error);
     await incrementFallbackAttempt(user);
     throw new Error(AUTH_ERROR_CODES.InvalidCredentials);
   }
+
+  const errorCode = recordContext.result.allowed
+    ? AUTH_ERROR_CODES.InvalidCredentials
+    : resolveRateLimitErrorCode(recordContext.result.retryAfterSeconds);
+  const error = new Error(errorCode) as RateLimitedError;
+  error.accountRateLimit = recordContext;
+  throw error;
 }
 
 async function incrementFallbackAttempt(user: User): Promise<void> {

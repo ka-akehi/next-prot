@@ -49,7 +49,7 @@ export default function LoginPage() {
           />
         </div>
 
-        {formError && <p className="text-sm text-red-600">{formError}</p>}
+        {formError && <p className="whitespace-pre-line text-sm text-red-600">{formError}</p>}
 
         <button
           type="button"

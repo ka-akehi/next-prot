@@ -1,15 +1,14 @@
 import {
-  buildLogContext,
   ensureAccountNotLocked,
   ensurePasswordIsConfigured,
   fetchUserForEmail,
   mapErrorToAttemptResult,
   markTwoFactorPending,
-  RateLimitedError,
   resetLoginStateIfExpired,
   verifyPasswordOrThrow,
   type VerifyPasswordResult,
 } from '@/helpers/auth.helpers';
+import { buildLogContext, RateLimitedError } from '@/helpers/auth/rate-limit';
 import { findUserById } from '@/repositories/users/user.repository';
 import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
 import { logAuthAttempt } from '@infrastructure/logging/auth-attempt-logger';
@@ -59,7 +58,7 @@ export const authConfig: NextAuthOptions = {
           user = await resetLoginStateIfExpired(user);
           await ensurePasswordIsConfigured(user, normalizedEmail, callbackUrl);
           ensureAccountNotLocked(user);
-          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password, normalizedEmail);
+          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password);
           user = verification.user;
           user = await markTwoFactorPending(user);
 

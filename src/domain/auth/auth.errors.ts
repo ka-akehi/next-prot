@@ -10,6 +10,9 @@ export const AUTH_ERROR_CODES = {
   TwoFactorRequired: 'TwoFactorRequired',
   InvalidTwoFactorCode: 'InvalidTwoFactorCode',
   TooManyRequests: 'TooManyRequests',
+  TooManyRequestsShortWait: 'TooManyRequestsShortWait',
+  TooManyRequestsMediumWait: 'TooManyRequestsMediumWait',
+  TooManyRequestsExtendedWait: 'TooManyRequestsExtendedWait',
 } as const;
 
 type AuthErrorCodesValue = (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];
@@ -26,6 +29,12 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCodesValue, string> = {
   [AUTH_ERROR_CODES.TwoFactorRequired]: '二段階認証コードを入力してください',
   [AUTH_ERROR_CODES.InvalidTwoFactorCode]: '二段階認証コードが正しくありません',
   [AUTH_ERROR_CODES.TooManyRequests]: 'アクセスが集中しています。しばらく待ってから再実行してください',
+  [AUTH_ERROR_CODES.TooManyRequestsShortWait]:
+    '同じアカウントでのログインが短時間に続いたため一時的に制限しています。\n数分後に再度お試しください。',
+  [AUTH_ERROR_CODES.TooManyRequestsMediumWait]:
+    'セキュリティ保護のためアカウントをロックしています。。\n十数分ほど待ってから再度お試しください。',
+  [AUTH_ERROR_CODES.TooManyRequestsExtendedWait]:
+    'セキュリティ保護のためアカウントをロックしています。。\n1時間ほど待ってから再度お試しください。\n解除できない場合はサポートまでご連絡ください。',
 };
 
 export const DEFAULT_AUTH_ERROR_MESSAGE = 'ログインに失敗しました。時間をおいて再度お試しください。';
