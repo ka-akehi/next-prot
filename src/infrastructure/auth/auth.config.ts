@@ -5,15 +5,18 @@ import {
   mapErrorToAttemptResult,
   markTwoFactorPending,
   resetLoginStateIfExpired,
+  resolveRateLimitIdentifier,
   verifyPasswordOrThrow,
   type VerifyPasswordResult,
 } from '@/helpers/auth.helpers';
-import { buildLogContext, RateLimitedError } from '@/helpers/auth/rate-limit';
+import { buildLogContext, createRateLimitPipeline, RateLimitedError } from '@/helpers/auth/rate-limit';
+import { enforceRecaptchaRequirement } from '@/helpers/auth/recaptcha';
 import { findUserById } from '@/repositories/users/user.repository';
 import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
 import { logAuthAttempt } from '@infrastructure/logging/auth-attempt-logger';
 import { prisma } from '@infrastructure/persistence/prisma';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { extractClientIpFromHeaders } from '@shared/network/extract-client-ip';
 import { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GitHubProvider from 'next-auth/providers/github';
@@ -41,13 +44,16 @@ export const authConfig: NextAuthOptions = {
         },
         password: { label: 'パスワード', type: 'password' },
         callbackUrl: { label: 'callbackUrl', type: 'text' },
+        captchaToken: { label: 'captchaToken', type: 'text' },
       },
       async authorize(credentials, req) {
         const rawEmail = credentials?.email?.trim() ?? '';
         const password = credentials?.password ?? '';
         const callbackUrl = credentials?.callbackUrl ?? DEFAULT_CALLBACK_URL;
+        const captchaToken = credentials?.captchaToken ?? null;
         const normalizedEmail = rawEmail.toLowerCase();
         const usernameForLog = normalizedEmail || rawEmail || null;
+        const clientIp = extractClientIpFromHeaders(req?.headers);
 
         try {
           if (!rawEmail || !password) {
@@ -56,9 +62,18 @@ export const authConfig: NextAuthOptions = {
 
           let user = await fetchUserForEmail(normalizedEmail, rawEmail);
           user = await resetLoginStateIfExpired(user);
-          await ensurePasswordIsConfigured(user, normalizedEmail, callbackUrl);
+          await ensurePasswordIsConfigured(user, callbackUrl);
           ensureAccountNotLocked(user);
-          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password);
+
+          const rateLimitIdentifier = resolveRateLimitIdentifier(user);
+          const pipeline = await createRateLimitPipeline(rateLimitIdentifier);
+
+          await enforceRecaptchaRequirement(pipeline.enforceContext?.result, {
+            captchaToken,
+            clientIp,
+          });
+
+          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password, { pipeline });
           user = verification.user;
           user = await markTwoFactorPending(user);
 

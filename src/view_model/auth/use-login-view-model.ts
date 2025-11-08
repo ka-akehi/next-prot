@@ -16,6 +16,15 @@ type UseLoginViewModelParams = {
   errorCode: string | null;
 };
 
+type RateLimitStatus = {
+  allowed: boolean;
+  retryAfterSeconds: number;
+  remaining: number;
+  threshold: number;
+  consecutiveFailures: number;
+  captchaRequired: boolean;
+};
+
 export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelParams) {
   const { status } = useSession();
   const router = useRouter();
@@ -23,6 +32,7 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rateLimitStatus, setRateLimitStatus] = useState<RateLimitStatus | null>(null);
 
   const initialErrorMessage = useMemo(() => {
     if (!errorCode) return null;
@@ -68,47 +78,111 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
     return Boolean(session?.user?.twoFactorEnabled && !session?.user?.twoFactorVerified);
   }, [fetchSession]);
 
-  const handleCredentialsLogin = useCallback(async () => {
-    setFormError(null);
-    setIsSubmitting(true);
+  const fetchRateLimitStatus = useCallback(async (identifier: string): Promise<RateLimitStatus | null> => {
+    if (!identifier.trim()) {
+      return null;
+    }
 
     try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-        callbackUrl,
+      const response = await fetch('/api/auth/rate-limit/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ identifier: identifier.trim().toLowerCase() }),
       });
 
-      if (result?.error) {
-        if (result.error.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
-          const redirectTarget = result.error.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
-          router.push(redirectTarget);
+      if (!response.ok) {
+        return null;
+      }
+
+      return (await response.json()) as RateLimitStatus;
+    } catch (error) {
+      console.error('[login] failed to fetch rate limit status', error);
+      return null;
+    }
+  }, []);
+
+  const refreshRateLimitStatus = useCallback(async (): Promise<RateLimitStatus | null> => {
+    const normalized = email.trim();
+
+    if (!normalized) {
+      setRateLimitStatus(null);
+      return null;
+    }
+
+    const status = await fetchRateLimitStatus(normalized);
+    setRateLimitStatus(status);
+
+    return status;
+  }, [email, fetchRateLimitStatus]);
+
+  useEffect(() => {
+    if (!email.trim()) {
+      setRateLimitStatus(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void refreshRateLimitStatus();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [email, refreshRateLimitStatus]);
+
+  const handleCredentialsLogin = useCallback(
+    async (captchaToken?: string | null) => {
+      setFormError(null);
+      setIsSubmitting(true);
+
+      try {
+        const latestStatus = await refreshRateLimitStatus();
+        if (latestStatus?.captchaRequired && !captchaToken) {
+          setFormError('reCAPTCHA を完了してください');
+          setIsSubmitting(false);
           return;
         }
 
-        const mappedMessage = AUTH_ERROR_MESSAGES[result.error as keyof typeof AUTH_ERROR_MESSAGES];
-        const message = mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE;
-        setFormError(message);
-        return;
+        const result = await signIn('credentials', {
+          redirect: false,
+          email,
+          password,
+          callbackUrl,
+          captchaToken,
+        });
+
+        if (result?.error) {
+          if (result.error.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
+            const redirectTarget = result.error.slice(PASSWORD_REQUIRED_ERROR_PREFIX.length) || '/account/password/new';
+            router.push(redirectTarget);
+            return;
+          }
+
+          const mappedMessage = AUTH_ERROR_MESSAGES[result.error as keyof typeof AUTH_ERROR_MESSAGES];
+          const message = mappedMessage ?? DEFAULT_AUTH_ERROR_MESSAGE;
+          setFormError(message);
+          return;
+        }
+
+        const requires2FA = await needsTwoFactorVerification();
+
+        if (requires2FA) {
+          router.push(`/2fa/verify?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+          return;
+        }
+
+        await fetch('/api/auth/session?update', { cache: 'no-store' }).catch(() => undefined);
+        router.push(result?.url ?? callbackUrl);
+      } catch (error) {
+        console.error('[login] credentials sign-in failed', error);
+        setFormError(AUTH_PROCESS_ERROR_MESSAGES.login);
+      } finally {
+        await refreshRateLimitStatus();
+        setIsSubmitting(false);
       }
-
-      const requires2FA = await needsTwoFactorVerification();
-
-      if (requires2FA) {
-        router.push(`/2fa/verify?callbackUrl=${encodeURIComponent(callbackUrl)}`);
-        return;
-      }
-
-      await fetch('/api/auth/session?update', { cache: 'no-store' }).catch(() => undefined);
-      router.push(result?.url ?? callbackUrl);
-    } catch (error) {
-      console.error('[login] credentials sign-in failed', error);
-      setFormError(AUTH_PROCESS_ERROR_MESSAGES.login);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [callbackUrl, email, needsTwoFactorVerification, password, router]);
+    },
+    [callbackUrl, email, needsTwoFactorVerification, password, refreshRateLimitStatus, router]
+  );
 
   return {
     status,
@@ -119,5 +193,6 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
     formError,
     isSubmitting,
     handleCredentialsLogin,
+    rateLimitStatus,
   };
 }

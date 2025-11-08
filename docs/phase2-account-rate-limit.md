@@ -26,7 +26,7 @@
 ## 具体的なステップ
 
 1. **設定値とキー設計の確定**
-   - `.env` に `ACCOUNT_RATE_LIMIT_THRESHOLD`, `ACCOUNT_RATE_LIMIT_BASE_WINDOW`, `ACCOUNT_RATE_LIMIT_MAX_WINDOW`, `ACCOUNT_RATE_LIMIT_PENALTY_TTL` を定義。
+   - `.env` に `ACCOUNT_RATE_LIMIT_THRESHOLD`, `ACCOUNT_RATE_LIMIT_BASE_WINDOW`, `ACCOUNT_RATE_LIMIT_MAX_WINDOW`, `ACCOUNT_RATE_LIMIT_HISTORY_WINDOW`, `ACCOUNT_RATE_LIMIT_PENALTY_TTL` を定義。
    - Redis キー例: `rate:account:failures:${identifier}`, `rate:account:lock:${identifier}`, `rate:account:penalty:${identifier}`。
    - IaC / オペレーションチームと連携し、本番環境の Redis リソース要件を再確認。
 2. **計算ロジックの実装**

@@ -13,6 +13,7 @@ export const AUTH_ERROR_CODES = {
   TooManyRequestsShortWait: 'TooManyRequestsShortWait',
   TooManyRequestsMediumWait: 'TooManyRequestsMediumWait',
   TooManyRequestsExtendedWait: 'TooManyRequestsExtendedWait',
+  RecaptchaFailed: 'RecaptchaFailed',
 } as const;
 
 type AuthErrorCodesValue = (typeof AUTH_ERROR_CODES)[keyof typeof AUTH_ERROR_CODES];
@@ -32,9 +33,10 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCodesValue, string> = {
   [AUTH_ERROR_CODES.TooManyRequestsShortWait]:
     '同じアカウントでのログインが短時間に続いたため一時的に制限しています。\n数分後に再度お試しください。',
   [AUTH_ERROR_CODES.TooManyRequestsMediumWait]:
-    'セキュリティ保護のためアカウントをロックしています。。\n十数分ほど待ってから再度お試しください。',
+    'セキュリティ保護のためアカウントをロックしています。\n十数分ほど待ってから再度お試しください。',
   [AUTH_ERROR_CODES.TooManyRequestsExtendedWait]:
-    'セキュリティ保護のためアカウントをロックしています。。\n1時間ほど待ってから再度お試しください。\n解除できない場合はサポートまでご連絡ください。',
+    'セキュリティ保護のためアカウントをロックしています。\n1時間ほど待ってから再度お試しください。\n解除できない場合はサポートまでご連絡ください。',
+  [AUTH_ERROR_CODES.RecaptchaFailed]: 'セキュリティチェックに失敗しました。しばらくしてから再度お試しください。',
 };
 
 export const DEFAULT_AUTH_ERROR_MESSAGE = 'ログインに失敗しました。時間をおいて再度お試しください。';

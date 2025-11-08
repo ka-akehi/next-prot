@@ -4,15 +4,38 @@ import { useLoginViewModel } from '@/view_model/auth/use-login-view-model';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useCallback } from 'react';
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
-export default function LoginPage() {
+const RECAPTCHA_ACTION = 'login_submit';
+
+type LoginFormProps = {
+  recaptchaSiteKey?: string;
+};
+
+function LoginForm({ recaptchaSiteKey }: LoginFormProps) {
   const params = useSearchParams();
   const callbackUrl = params?.get('callbackUrl') || '/bbs';
   const errorCode = params?.get('error') ?? null;
 
-  const { email, setEmail, password, setPassword, formError, isSubmitting, handleCredentialsLogin } = useLoginViewModel(
-    { callbackUrl, errorCode }
-  );
+  const { email, setEmail, password, setPassword, formError, isSubmitting, handleCredentialsLogin, rateLimitStatus } =
+    useLoginViewModel({ callbackUrl, errorCode });
+
+  const { executeRecaptcha } = useGoogleReCaptcha();
+
+  const handleLoginClick = useCallback(async () => {
+    let captchaToken: string | undefined;
+
+    if (rateLimitStatus?.captchaRequired && executeRecaptcha) {
+      try {
+        captchaToken = await executeRecaptcha(RECAPTCHA_ACTION);
+      } catch (error) {
+        console.error('[login] failed to execute reCAPTCHA v3', error);
+      }
+    }
+
+    await handleCredentialsLogin(captchaToken);
+  }, [rateLimitStatus, executeRecaptcha, handleCredentialsLogin]);
 
   return (
     <div className="flex min-h-[calc(100dvh-64px)] flex-col items-center justify-center px-4">
@@ -49,6 +72,10 @@ export default function LoginPage() {
           />
         </div>
 
+        {rateLimitStatus?.captchaRequired && !recaptchaSiteKey && (
+          <p className="text-sm text-red-600">reCAPTCHA サイトキーが設定されていません。</p>
+        )}
+
         {formError && <p className="whitespace-pre-line text-sm text-red-600">{formError}</p>}
 
         <button
@@ -56,7 +83,9 @@ export default function LoginPage() {
           className="w-full rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-60"
           disabled={isSubmitting}
           data-testid="login-credentials"
-          onClick={() => handleCredentialsLogin()}
+          onClick={() => {
+            void handleLoginClick();
+          }}
         >
           {isSubmitting ? 'ログイン中...' : 'ID/PWでログイン'}
         </button>
@@ -92,5 +121,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  if (!recaptchaSiteKey) {
+    return <LoginForm />;
+  }
+
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey} scriptProps={{ async: true, defer: true }}>
+      <LoginForm recaptchaSiteKey={recaptchaSiteKey} />
+    </GoogleReCaptchaProvider>
   );
 }

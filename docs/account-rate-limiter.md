@@ -5,7 +5,7 @@
 ## 実装のキーポイント
 
 - アカウント識別子は `setupRateLimiter` 内でトリム済み文字列に正規化され、空文字列は例外になる。
-- 直近 `ACCOUNT_RATE_LIMIT_BASE_WINDOW` 秒の失敗は `rate:account:failures:{identifier}` **Sorted Set** に `timestamp:suffix` 形式で保存。`getRecentFailureCount` で期限切れスコアを削除し、件数が 0 件ならキーも消す。
+- 直近 `ACCOUNT_RATE_LIMIT_HISTORY_WINDOW` 秒の失敗は `rate:account:failures:{identifier}` **Sorted Set** に `timestamp:suffix` 形式で保存。`getRecentFailureCount` で期限切れスコアを削除し、件数が 0 件ならキーも消す（デフォルト 24 時間分保持）。
 - ロック状態は `rate:account:lock:{identifier}`（値は `locked` 固定）の TTL で表現。`ensureLockTtl` が TTL の延長／短縮をまとめて扱う。
 - 長期的な抑止用に `rate:account:penalty:{identifier}` を別キーで保持。`computePenaltyTargetSeconds` が `ACCOUNT_RATE_LIMIT_PENALTY_TTL` と 12 時間の短い方を計算し、最低 1 秒は保証する。ペナルティ中に失敗が発生した場合は TTL を常にこの値（最大 12 時間）まで貼り直す。
 - API の戻り値は `allowed`, `retryAfterSeconds`, `remaining`, `consecutiveFailures`, `threshold` を含む共通構造 (`buildResult`)。
@@ -13,7 +13,8 @@
 ## 主な環境変数
 
 - `ACCOUNT_RATE_LIMIT_THRESHOLD`: 連続失敗の許容回数。
-- `ACCOUNT_RATE_LIMIT_BASE_WINDOW`: 連続失敗を集計する時間窓（秒）。
+- `ACCOUNT_RATE_LIMIT_BASE_WINDOW`: 閾値超過直後の待機秒（指数バックオフの基準値）。
+- `ACCOUNT_RATE_LIMIT_HISTORY_WINDOW`: 失敗履歴を保持する時間窓（秒）。`ACCOUNT_RATE_LIMIT_MAX_WINDOW` 以上である必要があり、デフォルトは 24 時間。
 - `ACCOUNT_RATE_LIMIT_MAX_WINDOW`: 指数バックオフとロック TTL の上限（秒）。
 - `ACCOUNT_RATE_LIMIT_PENALTY_TTL`: ペナルティ継続の最大秒数。`maxWindowSeconds` より小さく設定された場合でも起動時に自動で引き上げられる。
 
@@ -30,7 +31,7 @@
 
 2. **失敗記録 (`recordAccountFailure`)**
 
-   - 失敗ウィンドウ外のデータを削除、現在時刻＋ランダムサフィックスでエントリを追加し、Sorted Set の TTL を「`baseWindowSeconds` と `maxWindowSeconds` の大きい方」に更新。
+   - 失敗ウィンドウ外（`historyWindowSeconds` 超え）のデータを削除、現在時刻＋ランダムサフィックスでエントリを追加し、Sorted Set の TTL を `historyWindowSeconds`（既定 24 時間）に更新。
 
 - ペナルティ中でロックが残っていれば、毎回 `maxWindowSeconds`（既定 3600 秒）までロック TTL を戻し、ペナルティ TTL も 12 時間以内の設定値に貼り直す。
 - ペナルティ中でロックが切れていた場合は、今回の失敗を機にロックを張り直し（= 3600 秒）しつつ、ペナルティ TTL も再度 12 時間以内の値に設定する。

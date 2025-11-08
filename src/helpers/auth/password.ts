@@ -10,7 +10,7 @@ import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
 import type { User } from '@prisma/client';
 import { compare } from 'bcryptjs';
 
-const MAX_FAILED_LOGIN_ATTEMPTS = 500;
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
 const ACCOUNT_LOCK_DURATION_MS = 1000 * 60 * 15; // 15 minutes
 
 export async function verifyPassword(user: User, password: string, pipeline: RateLimitPipeline): Promise<User> {
@@ -20,18 +20,6 @@ export async function verifyPassword(user: User, password: string, pipeline: Rat
     return user;
   }
 
-  return handleInvalidPassword(user, pipeline);
-}
-
-export async function resetLoginState(user: User): Promise<User> {
-  if (user.loginAttempts === 0 && !user.lockedUntil) {
-    return user;
-  }
-
-  return updateUserById(user.id, { loginAttempts: 0, lockedUntil: null });
-}
-
-export async function handleInvalidPassword(user: User, pipeline: RateLimitPipeline): Promise<never> {
   let recordContext: AccountRateLimitLogContext;
 
   try {
@@ -48,6 +36,14 @@ export async function handleInvalidPassword(user: User, pipeline: RateLimitPipel
   const error = new Error(errorCode) as RateLimitedError;
   error.accountRateLimit = recordContext;
   throw error;
+}
+
+export async function resetLoginState(user: User): Promise<User> {
+  if (user.loginAttempts === 0 && !user.lockedUntil) {
+    return user;
+  }
+
+  return updateUserById(user.id, { loginAttempts: 0, lockedUntil: null });
 }
 
 async function incrementFallbackAttempt(user: User): Promise<void> {

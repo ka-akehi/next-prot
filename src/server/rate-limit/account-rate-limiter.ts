@@ -24,7 +24,7 @@ export async function enforceAccountRateLimit(identifier: string): Promise<Accou
   const [currentLockTtlRaw, penaltyTtlRaw, consecutiveFailures] = await Promise.all([
     client.ttl(lockKey),
     client.ttl(penaltyKey),
-    getRecentFailureCount(client, normalizedIdentifier, config.maxWindowSeconds),
+    getRecentFailureCount(client, normalizedIdentifier, config.historyWindowSeconds),
   ]);
 
   const lockActive = currentLockTtlRaw > 0;
@@ -52,12 +52,11 @@ export async function recordAccountFailure(identifier: string): Promise<AccountR
   const [penaltyTtlBefore, lockTtlBeforeRaw] = await Promise.all([client.ttl(penaltyKey), client.ttl(lockKey)]);
 
   const now = Date.now();
-  const windowMs = config.baseWindowSeconds * 1000;
-  const retentionSeconds = Math.max(config.baseWindowSeconds, config.maxWindowSeconds);
+  const historyWindowMs = config.historyWindowSeconds * 1000;
 
-  await client.zRemRangeByScore(failuresKey, 0, now - windowMs);
+  await client.zRemRangeByScore(failuresKey, 0, now - historyWindowMs);
   await client.zAdd(failuresKey, [{ score: now, value: `${now}:${randomSuffix()}` }]);
-  await client.expire(failuresKey, retentionSeconds);
+  await client.expire(failuresKey, config.historyWindowSeconds);
 
   const consecutiveFailures = await client.zCard(failuresKey);
 

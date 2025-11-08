@@ -4,12 +4,12 @@
 
 目的: ログ基盤と共有ストア（Redis）を用意して、計測できる状態にする
 
-1. Redis インスタンスを用意（マネージド可）
-2. 認証試行ログのスキーマを決める（timestamp, ip, username, path, user_agent, result）
-3. ロギングパイプラインを確立（コンソール →Fluentd/Logstash/Datadog へ送る）
+1. ✅ Redis インスタンスを用意（マネージド可）
+2. ✅ 認証試行ログのスキーマを決める（timestamp, ip, username, path, user_agent, result）
+3. ✅ ロギングパイプラインを確立（コンソール →Fluentd/Logstash/Datadog へ送る）
    - Next.js は `src/infrastructure/logging/auth-attempt-logger.ts` を介して `logs/auth-attempts.log`（NDJSON）へ認証イベントを出力し、Fluent Bit が `../next-prot/logs/*.log` を tail して集中収集する（スキーマは `types/auth-attempt-log.ts`）。
    - ログを収集できているかは `laravel-prot` で `docker compose logs -f fluent-bit` を実施するか直接ログファイルを見る。
-4. 開発環境に必要パッケージを追加（ioredis, bcrypt, dotenv など）
+4. ✅ 開発環境に必要パッケージを追加（ioredis, bcrypt, dotenv など）
 
 チェックポイント: Redis に接続できる / 最低限のログが収集できている
 
@@ -17,10 +17,10 @@
 
 目的: 一番効果が高く手早く導入できる防御を入れる（レートリミット + 一貫したエラーメッセージ）
 
-1. Next.js の middleware.ts に IP ベースの簡易レートリミット（Redis 使用）を導入
-2. API 側で統一されたエラーメッセージ（Invalid email or password 等）にする
-3. パスワードチェックは bcrypt/argon2 に移行（既ユーザは段階的に再ハッシュ）
-4. 監視ルール：1 分間に同 IP からの失敗 > X をアラート
+1. ✅ Next.js の middleware.ts に IP ベースの簡易レートリミット（Redis 使用）を導入
+2. ✅ API 側で統一されたエラーメッセージ（Invalid email or password 等）にする
+3. ✅ パスワードチェックは bcrypt/argon2 に移行（既ユーザは段階的に再ハッシュ）
+4. ✅ 監視ルール：1 分間に同 IP からの失敗 > X をアラート
 
 チェックポイント: レートリミットで攻撃トラフィックが抑えられる / 監視でアラートが上がる
 
@@ -28,11 +28,11 @@
 
 目的: アカウント単位とデバイス/リスク判定を追加して攻撃耐性を高める
 
-1. アカウント単位の失敗カウント（Redis）と指数バックオフの実装
+1. ✅ アカウント単位の失敗カウント（Redis）と指数バックオフの実装
    redis サーバーでキーを取得する場合`laravel-prot` で`docker exec -it redis redis-cli`
 2. CAPTCHA（閾値超過で発動）を導入（reCAPTCHA / hCaptcha など）
 3. クレデンシャル・スタッフィング対応：登録/更新時に Pwned Passwords でチェック
-4. ログイン成功時に失敗カウントをリセット
+4. ✅ ログイン成功時に失敗カウントをリセット
 
 チェックポイント: 同一アカウントに対するなりすまし試行が減る / CAPTCHA でボットを弾ける
 

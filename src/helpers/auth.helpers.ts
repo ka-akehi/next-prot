@@ -6,20 +6,25 @@ import {
   resolveRateLimitErrorCode,
   type AccountRateLimitLogContext,
   type RateLimitedError,
+  type RateLimitPipeline,
 } from '@/helpers/auth/rate-limit';
 import { findUserByEmailCandidates, updateUserById } from '@/repositories/users/user.repository';
 import type { AuthAttemptResult } from '@/types/auth-attempt-log';
 import { issuePasswordSetupToken } from '@application/auth/password-token';
 import {
   AUTH_ERROR_CODES,
-  PASSWORD_REQUIRED_ERROR_PREFIX,
   createPasswordRequiredError,
+  PASSWORD_REQUIRED_ERROR_PREFIX,
 } from '@domain/auth/auth.errors';
 import type { User } from '@prisma/client';
 
 export type VerifyPasswordResult = {
   user: User;
   accountRateLimit?: AccountRateLimitLogContext;
+};
+
+type VerifyPasswordOptions = {
+  pipeline?: RateLimitPipeline;
 };
 
 export async function fetchUserForEmail(normalizedEmail: string, rawEmail: string): Promise<User> {
@@ -46,16 +51,12 @@ export async function resetLoginStateIfExpired(user: User): Promise<User> {
   return updateUserById(user.id, { lockedUntil: null, loginAttempts: 0 });
 }
 
-export async function ensurePasswordIsConfigured(
-  user: User,
-  normalizedEmail: string,
-  callbackUrl: string
-): Promise<void> {
+export async function ensurePasswordIsConfigured(user: User, callbackUrl: string): Promise<void> {
   if (user.passwordHash) {
     return;
   }
 
-  const emailForSetup = normalizedEmail || user.email || '';
+  const emailForSetup = user.email || '';
   const { token } = await issuePasswordSetupToken(user.id);
   const setupUrl = buildPasswordSetupUrl(callbackUrl, emailForSetup, token);
 
@@ -70,9 +71,13 @@ export function ensureAccountNotLocked(user: User): void {
   }
 }
 
-export async function verifyPasswordOrThrow(user: User, password: string): Promise<VerifyPasswordResult> {
+export async function verifyPasswordOrThrow(
+  user: User,
+  password: string,
+  options?: VerifyPasswordOptions
+): Promise<VerifyPasswordResult> {
   const identifier = resolveRateLimitIdentifier(user);
-  const pipeline = await createRateLimitPipeline(identifier);
+  const pipeline = options?.pipeline ?? (await createRateLimitPipeline(identifier));
 
   const enforceContext = pipeline.enforceContext;
   if (enforceContext?.result && !enforceContext.result.allowed) {
@@ -148,10 +153,6 @@ function buildPasswordSetupUrl(callbackUrl: string, email: string, token: string
   )}&email=${encodeURIComponent(trimmedEmail)}`;
 }
 
-function resolveRateLimitIdentifier(user: User): string {
-  if (user.email && user.email.trim().length > 0) {
-    return user.email.trim().toLowerCase();
-  }
-
-  return `user:${user.id}`;
+export function resolveRateLimitIdentifier(user: User): string {
+  return user.email ?? `user:${user.id}`;
 }
