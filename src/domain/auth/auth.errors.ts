@@ -39,6 +39,24 @@ export const AUTH_ERROR_MESSAGES: Record<AuthErrorCodesValue, string> = {
   [AUTH_ERROR_CODES.RecaptchaFailed]: 'セキュリティチェックに失敗しました。しばらくしてから再度お試しください。',
 };
 
+export const AUTH_ERROR_TYPE = {
+  MissingCredentials: 'invalid-credentials',
+  CredentialsSignin: 'invalid-credentials',
+  AccountLocked: 'locked',
+  AccountTemporarilyLocked: 'locked',
+  OAuthAccountNotLinked: null,
+  AccessDenied: null,
+  TwoFactorRequired: 'mfa-required',
+  InvalidTwoFactorCode: 'mfa-required',
+  TooManyRequests: 'rate-limited',
+  TooManyRequestsShortWait: 'rate-limited',
+  TooManyRequestsMediumWait: 'rate-limited',
+  TooManyRequestsExtendedWait: 'rate-limited',
+  RecaptchaFailed: null,
+} as const;
+
+export type AuthErrorTypeCode = keyof typeof AUTH_ERROR_TYPE;
+
 export const DEFAULT_AUTH_ERROR_MESSAGE = 'ログインに失敗しました。時間をおいて再度お試しください。';
 
 export const AUTH_PROCESS_ERROR_MESSAGES = {

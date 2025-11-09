@@ -1,6 +1,5 @@
 import { resetLoginState, verifyPassword } from '@/helpers/auth/password';
 import {
-  createRateLimitPipeline,
   recordRateLimitFailure,
   resetRateLimitState,
   resolveRateLimitErrorCode,
@@ -13,6 +12,8 @@ import type { AuthAttemptResult } from '@/types/auth-attempt-log';
 import { issuePasswordSetupToken } from '@application/auth/password-token';
 import {
   AUTH_ERROR_CODES,
+  AUTH_ERROR_TYPE,
+  AuthErrorTypeCode,
   createPasswordRequiredError,
   PASSWORD_REQUIRED_ERROR_PREFIX,
 } from '@domain/auth/auth.errors';
@@ -21,10 +22,6 @@ import type { User } from '@prisma/client';
 export type VerifyPasswordResult = {
   user: User;
   accountRateLimit?: AccountRateLimitLogContext;
-};
-
-type VerifyPasswordOptions = {
-  pipeline?: RateLimitPipeline;
 };
 
 export async function fetchUserForEmail(normalizedEmail: string, rawEmail: string): Promise<User> {
@@ -74,11 +71,8 @@ export function ensureAccountNotLocked(user: User): void {
 export async function verifyPasswordOrThrow(
   user: User,
   password: string,
-  options?: VerifyPasswordOptions
+  pipeline: RateLimitPipeline
 ): Promise<VerifyPasswordResult> {
-  const identifier = resolveRateLimitIdentifier(user);
-  const pipeline = options?.pipeline ?? (await createRateLimitPipeline(identifier));
-
   const enforceContext = pipeline.enforceContext;
   if (enforceContext?.result && !enforceContext.result.allowed) {
     const recordContext = await recordRateLimitFailure(pipeline);
@@ -107,38 +101,17 @@ export async function markTwoFactorPending(user: User): Promise<User> {
 }
 
 export function mapErrorToAttemptResult(error: unknown): AuthAttemptResult {
-  if (!(error instanceof Error)) {
+  if (!(error instanceof Error) || !error.message) {
     return 'error';
   }
 
-  const message = error.message ?? '';
+  const message = error.message;
 
-  if (message === AUTH_ERROR_CODES.InvalidCredentials || message === AUTH_ERROR_CODES.MissingCredentials) {
-    return 'invalid-credentials';
-  }
-
-  if (message === AUTH_ERROR_CODES.AccountLocked || message === AUTH_ERROR_CODES.AccountTemporarilyLocked) {
-    return 'locked';
-  }
-
-  if (
-    message.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX) ||
-    message === AUTH_ERROR_CODES.TwoFactorRequired ||
-    message === AUTH_ERROR_CODES.InvalidTwoFactorCode
-  ) {
+  if (message.startsWith(PASSWORD_REQUIRED_ERROR_PREFIX)) {
     return 'mfa-required';
   }
 
-  if (
-    message === AUTH_ERROR_CODES.TooManyRequests ||
-    message === AUTH_ERROR_CODES.TooManyRequestsShortWait ||
-    message === AUTH_ERROR_CODES.TooManyRequestsMediumWait ||
-    message === AUTH_ERROR_CODES.TooManyRequestsExtendedWait
-  ) {
-    return 'rate-limited';
-  }
-
-  return 'error';
+  return AUTH_ERROR_TYPE[message as AuthErrorTypeCode] ?? 'error';
 }
 
 function buildPasswordSetupUrl(callbackUrl: string, email: string, token: string): string {
@@ -151,8 +124,4 @@ function buildPasswordSetupUrl(callbackUrl: string, email: string, token: string
   return `/account/password/new?redirect=${encodeURIComponent(callbackUrl)}&token=${encodeURIComponent(
     token
   )}&email=${encodeURIComponent(trimmedEmail)}`;
-}
-
-export function resolveRateLimitIdentifier(user: User): string {
-  return user.email ?? `user:${user.id}`;
 }

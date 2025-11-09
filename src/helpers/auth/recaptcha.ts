@@ -30,6 +30,7 @@ export async function enforceRecaptchaRequirement(
 
   try {
     const verification = await verifyRecaptchaToken(token, config.secretKey, options.clientIp);
+
     if (!verification.success) {
       throw new Error('recaptcha-verification-failed');
     }

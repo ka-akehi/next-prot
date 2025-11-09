@@ -79,17 +79,13 @@ export function useLoginViewModel({ callbackUrl, errorCode }: UseLoginViewModelP
   }, [fetchSession]);
 
   const fetchRateLimitStatus = useCallback(async (identifier: string): Promise<RateLimitStatus | null> => {
-    if (!identifier.trim()) {
-      return null;
-    }
-
     try {
       const response = await fetch('/api/auth/rate-limit/status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ identifier: identifier.trim().toLowerCase() }),
+        body: JSON.stringify({ identifier: identifier.toLowerCase() }),
       });
 
       if (!response.ok) {

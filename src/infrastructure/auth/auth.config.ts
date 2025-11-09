@@ -5,7 +5,6 @@ import {
   mapErrorToAttemptResult,
   markTwoFactorPending,
   resetLoginStateIfExpired,
-  resolveRateLimitIdentifier,
   verifyPasswordOrThrow,
   type VerifyPasswordResult,
 } from '@/helpers/auth.helpers';
@@ -47,12 +46,11 @@ export const authConfig: NextAuthOptions = {
         captchaToken: { label: 'captchaToken', type: 'text' },
       },
       async authorize(credentials, req) {
-        const rawEmail = credentials?.email?.trim() ?? '';
         const password = credentials?.password ?? '';
         const callbackUrl = credentials?.callbackUrl ?? DEFAULT_CALLBACK_URL;
         const captchaToken = credentials?.captchaToken ?? null;
+        const rawEmail = credentials?.email?.trim() ?? '';
         const normalizedEmail = rawEmail.toLowerCase();
-        const usernameForLog = normalizedEmail || rawEmail || null;
         const clientIp = extractClientIpFromHeaders(req?.headers);
 
         try {
@@ -61,11 +59,12 @@ export const authConfig: NextAuthOptions = {
           }
 
           let user = await fetchUserForEmail(normalizedEmail, rawEmail);
+
           user = await resetLoginStateIfExpired(user);
           await ensurePasswordIsConfigured(user, callbackUrl);
           ensureAccountNotLocked(user);
 
-          const rateLimitIdentifier = resolveRateLimitIdentifier(user);
+          const rateLimitIdentifier = user.email ?? `user:${user.id}`;
           const pipeline = await createRateLimitPipeline(rateLimitIdentifier);
 
           await enforceRecaptchaRequirement(pipeline.enforceContext?.result, {
@@ -73,12 +72,12 @@ export const authConfig: NextAuthOptions = {
             clientIp,
           });
 
-          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password, { pipeline });
+          const verification: VerifyPasswordResult = await verifyPasswordOrThrow(user, password, pipeline);
           user = verification.user;
           user = await markTwoFactorPending(user);
 
           await logAuthAttempt({
-            username: usernameForLog,
+            username: normalizedEmail || 'unknown-user',
             result: 'success',
             req,
             context: buildLogContext(verification.accountRateLimit),
@@ -94,7 +93,7 @@ export const authConfig: NextAuthOptions = {
           const rateLimitFromError = (error as RateLimitedError)?.accountRateLimit;
 
           await logAuthAttempt({
-            username: usernameForLog,
+            username: normalizedEmail || 'unknown-user',
             result: mapErrorToAttemptResult(error),
             reason: error instanceof Error ? error.message : 'unknown-error',
             req,
