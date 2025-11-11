@@ -10,6 +10,7 @@ import {
   findUserByEmailCandidates,
   updateUserById,
 } from "@/repositories/users/user.repository";
+import { checkPwnedPassword } from "@/server/security/pwned-password";
 import { compare, hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 
@@ -59,6 +60,14 @@ export async function POST(request: Request) {
     if (!isPasswordComplex(password)) {
       return NextResponse.json(
         { error: PASSWORD_ERROR_MESSAGES.complexity },
+        { status: 400 }
+      );
+    }
+
+    const pwnedResult = await checkPwnedPassword(password);
+    if (pwnedResult.compromised) {
+      return NextResponse.json(
+        { error: PASSWORD_ERROR_MESSAGES.pwnedPassword },
         { status: 400 }
       );
     }

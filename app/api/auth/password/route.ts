@@ -1,5 +1,6 @@
 import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/helpers/password-policy.helpers';
 import { findUserById, updateUserById } from '@/repositories/users/user.repository';
+import { checkPwnedPassword } from '@/server/security/pwned-password';
 import {
   AUTH_API_ERROR_MESSAGES,
   GENERAL_ERROR_MESSAGES,
@@ -36,6 +37,11 @@ export async function POST(request: Request) {
 
     if (!isPasswordComplex(password)) {
       return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
+    }
+
+    const pwnedResult = await checkPwnedPassword(password);
+    if (pwnedResult.compromised) {
+      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.pwnedPassword }, { status: 400 });
     }
 
     const user = await findUserById(session.user.id);

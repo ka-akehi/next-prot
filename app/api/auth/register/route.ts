@@ -1,5 +1,6 @@
 import { MIN_PASSWORD_LENGTH, isPasswordComplex } from '@/helpers/password-policy.helpers';
 import { createUser, findMostRelevantUserByEmail, updateUserById } from '@/repositories/users/user.repository';
+import { checkPwnedPassword } from '@/server/security/pwned-password';
 import { issuePasswordSetupToken } from '@application/auth/password-token';
 import { PASSWORD_ERROR_MESSAGES, REGISTER_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { hash } from 'bcryptjs';
@@ -35,6 +36,11 @@ export async function POST(request: Request) {
 
     if (!isPasswordComplex(password)) {
       return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.complexity }, { status: 400 });
+    }
+
+    const pwnedResult = await checkPwnedPassword(password);
+    if (pwnedResult.compromised) {
+      return NextResponse.json({ error: PASSWORD_ERROR_MESSAGES.pwnedPassword }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase();
