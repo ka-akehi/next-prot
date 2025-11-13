@@ -1,3 +1,4 @@
+import { getEnvString } from '@/shared/env';
 import {
   ensureAccountNotLocked,
   ensurePasswordIsConfigured,
@@ -23,6 +24,14 @@ import GoogleProvider from 'next-auth/providers/google';
 
 const MAX_2FA_AGE = 1000 * 60 * 60; // 1時間
 const DEFAULT_CALLBACK_URL = '/bbs';
+const googleClientId = getEnvString('GOOGLE_CLIENT_ID', '');
+const googleClientSecret = getEnvString('GOOGLE_CLIENT_SECRET', '');
+const githubClientId = getEnvString('GITHUB_CLIENT_ID', '');
+const githubClientSecret = getEnvString('GITHUB_CLIENT_SECRET', '');
+
+if (!googleClientId || !googleClientSecret || !githubClientId || !githubClientSecret) {
+  throw new Error('OAuth client credentials are not configured');
+}
 
 export const authConfig: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -105,12 +114,12 @@ export const authConfig: NextAuthOptions = {
       },
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
     }),
     GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      clientId: githubClientId,
+      clientSecret: githubClientSecret,
     }),
   ],
   callbacks: {

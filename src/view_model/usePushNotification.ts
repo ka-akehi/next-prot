@@ -1,8 +1,12 @@
 'use client';
 
+import { getEnvString } from '@/shared/env';
 import { useEffect, useState } from 'react';
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+const VAPID_PUBLIC_KEY = getEnvString('NEXT_PUBLIC_VAPID_PUBLIC_KEY', '');
+if (!VAPID_PUBLIC_KEY) {
+  throw new Error('NEXT_PUBLIC_VAPID_PUBLIC_KEY is not defined');
+}
 
 export function usePushNotification() {
   const [subscribed, setSubscribed] = useState(false);

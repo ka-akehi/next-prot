@@ -1,9 +1,11 @@
+import { getEnvString } from '@/shared/env';
 import { createPost } from '@/repositories/posts/post.repository';
 import { upsertUserByEmail } from '@/repositories/users/user.repository';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (process.env.NODE_ENV === 'production') {
+  const nodeEnv = getEnvString('NODE_ENV', '');
+  if (nodeEnv === 'production') {
     return res.status(403).json({ error: 'Forbidden' });
   }
   if (req.method !== 'POST') {

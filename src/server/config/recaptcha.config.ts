@@ -1,3 +1,5 @@
+import { getEnvNumber, getEnvString } from '@/shared/env';
+
 export type RecaptchaConfig = {
   enabled: boolean;
   secretKey: string;
@@ -5,8 +7,6 @@ export type RecaptchaConfig = {
 };
 
 const DEFAULT_SCORE = 0.5;
-const RAW_SCORE = Number(process.env.RECAPTCHA_SCORE_THRESHOLD);
-const RAW_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY ?? '';
 
 let cachedConfig: RecaptchaConfig | null = null;
 
@@ -15,11 +15,13 @@ export function getRecaptchaConfig(): RecaptchaConfig {
     return cachedConfig;
   }
 
-  const scoreThreshold = normalizeScoreThreshold(RAW_SCORE);
+  const secretKey = getEnvString('RECAPTCHA_SECRET_KEY', '');
+  const rawScore = getEnvNumber('RECAPTCHA_SCORE_THRESHOLD', DEFAULT_SCORE);
+  const scoreThreshold = normalizeScoreThreshold(rawScore);
 
   cachedConfig = {
-    enabled: !!RAW_SECRET_KEY.trim(),
-    secretKey: RAW_SECRET_KEY,
+    enabled: !!secretKey.trim(),
+    secretKey,
     scoreThreshold,
   };
 

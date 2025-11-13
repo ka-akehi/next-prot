@@ -1,3 +1,4 @@
+import { getEnvString } from '@/shared/env';
 import { extractClientIpFromHeaders } from '@shared/network/extract-client-ip';
 import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
@@ -8,6 +9,7 @@ const RATE_LIMIT_ERROR_CODE = 'TooManyRequests';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const nextAuthSecret = getEnvString('NEXTAUTH_SECRET', '');
 
   if (shouldRateLimitAuth(pathname, req.method)) {
     const rateLimitResponse = await handleRateLimit(req);
@@ -16,7 +18,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req, secret: nextAuthSecret });
 
   // ✅ /mypage, /2fa はログイン必須
   if (pathname.startsWith('/mypage') || pathname.startsWith('/2fa')) {
@@ -51,8 +53,8 @@ function shouldRateLimitAuth(pathname: string, method: string): boolean {
 }
 
 async function handleRateLimit(req: NextRequest): Promise<NextResponse | null> {
-  const secret = process.env.RATE_LIMIT_SECRET ?? undefined;
-  if (!secret) {
+  const rateLimitSecret = getEnvString('RATE_LIMIT_SECRET', '');
+  if (!rateLimitSecret) {
     return null;
   }
 
@@ -65,7 +67,7 @@ async function handleRateLimit(req: NextRequest): Promise<NextResponse | null> {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        [RATE_LIMIT_HEADER_KEY]: secret,
+        [RATE_LIMIT_HEADER_KEY]: rateLimitSecret,
       },
       body,
     });

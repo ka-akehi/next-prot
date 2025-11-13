@@ -1,3 +1,5 @@
+import { getEnvNumber } from '@/shared/env';
+
 export type AccountRateLimitConfig = {
   threshold: number;
   baseWindowSeconds: number;
@@ -22,10 +24,7 @@ export function getAccountRateLimitConfig(): AccountRateLimitConfig {
   const threshold = readPositiveInteger('ACCOUNT_RATE_LIMIT_THRESHOLD', DEFAULT_THRESHOLD);
   const baseWindowSeconds = readPositiveInteger('ACCOUNT_RATE_LIMIT_BASE_WINDOW', DEFAULT_BASE_WINDOW_SECONDS);
   const maxWindowSeconds = readPositiveInteger('ACCOUNT_RATE_LIMIT_MAX_WINDOW', DEFAULT_MAX_WINDOW_SECONDS);
-  const historyWindowSeconds = readPositiveInteger(
-    'ACCOUNT_RATE_LIMIT_HISTORY_WINDOW',
-    DEFAULT_HISTORY_WINDOW_SECONDS
-  );
+  const historyWindowSeconds = readPositiveInteger('ACCOUNT_RATE_LIMIT_HISTORY_WINDOW', DEFAULT_HISTORY_WINDOW_SECONDS);
   let penaltyTtlSeconds = readPositiveInteger('ACCOUNT_RATE_LIMIT_PENALTY_TTL', DEFAULT_PENALTY_TTL_SECONDS);
 
   if (maxWindowSeconds < baseWindowSeconds) {
@@ -52,18 +51,12 @@ export function getAccountRateLimitConfig(): AccountRateLimitConfig {
 }
 
 function readPositiveInteger(envKey: string, defaultValue: number): number {
-  const raw = process.env[envKey];
-
-  if (!raw || raw.trim().length === 0) {
-    return defaultValue;
-  }
-
-  const parseNumber = Number(raw);
-  const isPositiveInteger = Number.isInteger(parseNumber) && parseNumber > 0;
-  const isFinite = Number.isFinite(parseNumber);
+  const raw = getEnvNumber(envKey, defaultValue);
+  const isPositiveInteger = Number.isInteger(raw) && raw > 0;
+  const isFinite = Number.isFinite(raw);
   if (!isFinite || !isPositiveInteger) {
     throw new Error(`${envKey} must be a positive integer`);
   }
 
-  return parseNumber;
+  return raw;
 }

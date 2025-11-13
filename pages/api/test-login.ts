@@ -1,10 +1,12 @@
+import { getEnvString } from '@/shared/env';
 import { createSession } from '@/repositories/sessions/session.repository';
 import { upsertUserByEmail } from '@/repositories/users/user.repository';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { setCookie } from 'nookies';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (process.env.NODE_ENV === 'production') {
+  const nodeEnv = getEnvString('NODE_ENV', '');
+  if (nodeEnv === 'production') {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
@@ -33,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   setCookie({ res }, 'next-auth.session-token', sessionToken, {
     path: '/',
     httpOnly: true,
-    secure: (process.env.NODE_ENV as string) === 'production',
+    secure: nodeEnv === 'production',
     sameSite: 'lax',
   });
 

@@ -1,7 +1,10 @@
 import { ensureRedisConnection } from '@/server/redis';
+import { getEnvNumber } from '@/shared/env';
 
-const MAX_ATTEMPTS = process.env.IP_RATE_LIMIT_MAX_ATTEMPTS ?? 100;
-const WINDOW_SECONDS = process.env.IP_RATE_LIMIT_WINDOW_SECONDS ?? 60;
+const DEFAULT_MAX_ATTEMPTS = 100;
+const DEFAULT_WINDOW_SECONDS = 60;
+const MAX_ATTEMPTS = getEnvNumber('IP_RATE_LIMIT_MAX_ATTEMPTS', DEFAULT_MAX_ATTEMPTS);
+const WINDOW_SECONDS = getEnvNumber('IP_RATE_LIMIT_WINDOW_SECONDS', DEFAULT_WINDOW_SECONDS);
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -12,8 +15,8 @@ export type RateLimitResult = {
 
 export async function enforceIpRateLimit(ip: string): Promise<RateLimitResult> {
   const client = await ensureRedisConnection();
-  const windowSeconds = Number(WINDOW_SECONDS);
-  const maxAttempts = Number(MAX_ATTEMPTS);
+  const windowSeconds = WINDOW_SECONDS;
+  const maxAttempts = MAX_ATTEMPTS;
   const redisKey = `rate:ip:${ip}`;
 
   const results = await client.multi().incr(redisKey).expire(redisKey, windowSeconds, 'NX').exec();

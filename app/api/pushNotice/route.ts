@@ -1,11 +1,18 @@
+import { getEnvString } from '@/shared/env';
 import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import webPush from 'web-push';
 
+const vapidPublicKey = getEnvString('NEXT_PUBLIC_VAPID_PUBLIC_KEY', '');
+const vapidPrivateKey = getEnvString('NEXT_PUBLIC_VAPID_PRIVATE_KEY', '');
+if (!vapidPublicKey || !vapidPrivateKey) {
+  throw new Error('VAPID keys are not configured');
+}
+
 const vapidKeys = {
-  publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  privateKey: process.env.NEXT_PUBLIC_VAPID_PRIVATE_KEY!,
+  publicKey: vapidPublicKey,
+  privateKey: vapidPrivateKey,
 };
 
 webPush.setVapidDetails('mailto:you@example.com', vapidKeys.publicKey, vapidKeys.privateKey);

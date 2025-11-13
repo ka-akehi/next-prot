@@ -1,3 +1,5 @@
+import { getEnvString } from '@/shared/env';
+
 export async function logServerError(error: unknown, context: string) {
   const payload = {
     type: 'server-error',
@@ -11,7 +13,10 @@ export async function logServerError(error: unknown, context: string) {
 
   // 必要ならDB保存やSentry連携など
   try {
-    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/log-server-error`, {
+    const appUrl = getEnvString('NEXT_PUBLIC_APP_URL', '');
+    const endpoint = appUrl ? `${appUrl}/api/log-server-error` : '/api/log-server-error';
+
+    await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

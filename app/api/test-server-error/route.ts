@@ -1,8 +1,10 @@
+import { getEnvString } from '@/shared/env';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   // 開発専用
-  if (process.env.NODE_ENV !== 'development') {
+  const nodeEnv = getEnvString('NODE_ENV', '');
+  if (nodeEnv !== 'development') {
     return new NextResponse('Not Found', { status: 404 });
   }
 

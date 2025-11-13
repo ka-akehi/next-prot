@@ -1,3 +1,4 @@
+import { getEnvString } from '@/shared/env';
 import { updateExportJobById } from '@/repositories/export-jobs/export-job.repository';
 import { countPosts, findPosts } from '@/repositories/posts/post.repository';
 import { broadcastExport } from '@/server/export-ws-handler';
@@ -22,7 +23,7 @@ export async function runCsvExportInBackground(jobId: string) {
 
   try {
     // 2. 出力対象データを準備
-    const devMode = process.env.NODE_ENV === 'development';
+    const devMode = getEnvString('NODE_ENV', '') === 'development';
 
     // 件数 (dev は 1万件でテスト、本番は DB 件数)
     const total = devMode

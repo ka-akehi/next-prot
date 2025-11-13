@@ -2,15 +2,22 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import webPush from 'web-push';
+import { getEnvString } from '../src/shared/env';
 dotenv.config();
 
 // ✅ 保存された subscription を読み込む
 const subscriptionPath = path.join(process.cwd(), 'subscriptions/sub.json');
 const subscription = JSON.parse(fs.readFileSync(subscriptionPath, 'utf-8'));
 
+const vapidPublicKey = getEnvString('NEXT_PUBLIC_VAPID_PUBLIC_KEY', '');
+const vapidPrivateKey = getEnvString('NEXT_PUBLIC_VAPID_PRIVATE_KEY', '');
+if (!vapidPublicKey || !vapidPrivateKey) {
+  throw new Error('Missing VAPID keys');
+}
+
 const vapidKeys = {
-  publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  privateKey: process.env.NEXT_PUBLIC_VAPID_PRIVATE_KEY!,
+  publicKey: vapidPublicKey,
+  privateKey: vapidPrivateKey,
 };
 
 webPush.setVapidDetails('mailto:you@example.com', vapidKeys.publicKey, vapidKeys.privateKey);

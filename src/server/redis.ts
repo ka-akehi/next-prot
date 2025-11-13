@@ -1,3 +1,4 @@
+import { getEnvString } from '@/shared/env';
 import { createClient } from 'redis';
 
 type RedisClient = ReturnType<typeof createClient>;
@@ -43,7 +44,7 @@ function resetCachedClient(client: RedisClient): void {
 }
 
 export function getRedisClient(): RedisClient {
-  const url = process.env.REDIS_URL;
+  const url = getEnvString('REDIS_URL', '');
 
   if (!url) {
     throw new Error('REDIS_URL is not configured');

@@ -1,3 +1,4 @@
+import { getEnvString } from '@/shared/env';
 import { authConfig } from '@infrastructure/auth/auth.config';
 import { AUTH_API_ERROR_MESSAGES } from '@domain/messages/error.messages';
 import { getServerSession } from 'next-auth';
@@ -5,7 +6,8 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   // 開発専用
-  if (process.env.NODE_ENV !== 'development') {
+  const nodeEnv = getEnvString('NODE_ENV', '');
+  if (nodeEnv !== 'development') {
     return new NextResponse('Not Found', { status: 404 });
   }
 

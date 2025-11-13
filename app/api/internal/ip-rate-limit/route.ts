@@ -1,11 +1,12 @@
 import { enforceIpRateLimit } from '@/server/rate-limit/ip-rate-limiter';
+import { getEnvString } from '@/shared/env';
 import { NextRequest, NextResponse } from 'next/server';
 
 const INTERNAL_HEADER = 'x-rate-limit-key';
 
 export async function POST(req: NextRequest) {
-  const secret = process.env.RATE_LIMIT_SECRET ?? undefined;
-  if (!secret) {
+  const rateLimitSecret = getEnvString('RATE_LIMIT_SECRET', '');
+  if (!rateLimitSecret) {
     return NextResponse.json(
       { ok: false, error: { code: 'CONFIG_ERROR', message: 'Rate limiter configuration error' } },
       { status: 500 }
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
   }
 
   const providedSecret = req.headers.get(INTERNAL_HEADER);
-  if (providedSecret !== secret) {
+  if (providedSecret !== rateLimitSecret) {
     return NextResponse.json({ ok: false, error: { code: 'UNAUTHORIZED' } }, { status: 401 });
   }
 

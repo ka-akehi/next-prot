@@ -1,5 +1,6 @@
 'use client';
 
+import { getEnvString } from '@/shared/env';
 import { useLoginViewModel } from '@/view_model/auth/use-login-view-model';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -125,7 +126,7 @@ function LoginForm({ recaptchaSiteKey }: LoginFormProps) {
 }
 
 export default function LoginPage() {
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const recaptchaSiteKey = getEnvString('NEXT_PUBLIC_RECAPTCHA_SITE_KEY', '');
 
   if (!recaptchaSiteKey) {
     return <LoginForm />;

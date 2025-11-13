@@ -1,3 +1,4 @@
+import { getEnvBoolean, getEnvNumber, getEnvString } from '@/shared/env';
 import crypto from 'node:crypto';
 
 export type PwnedPasswordCheckResult = {
@@ -5,27 +6,38 @@ export type PwnedPasswordCheckResult = {
   count: number;
 };
 
+const DEFAULT_USER_AGENT = 'next-prot/pwned-password-check' as const;
+
+const PREFIX_LENGTH = 5 as const;
+
+const DEFAULT_SUFFIX_COUNT = 1 as const;
+const DEFAULT_MAX_COUNT = 1 as const;
+const DEFAULT_TIMEOUT_MS = 2000 as const;
+const DEFAULT_API_BASE_URL = 'https://api.pwnedpasswords.com' as const;
+const DEFAULT_RETRY_LIMIT = 3 as const;
+const DEFAULT_RETRY_DELAY_MS = 200 as const;
+
 type PwnedPasswordConfig = {
   enabled: boolean;
   maxCount: number;
   timeoutMs: number;
   apiBaseUrl: string;
+  retryLimit: number;
+  retryDelayMs: number;
 };
 
 export const cachedConfig: PwnedPasswordConfig = {
-  enabled: Boolean(process.env.PWNED_PASSWORD_VALIDATION_ENABLED),
-  maxCount: Number(process.env.PWNED_PASSWORD_MAX_COUNT) ?? 1,
-  timeoutMs: Number(process.env.PWNED_PASSWORD_TIMEOUT_MS) ?? 2000,
-  apiBaseUrl: 'https://api.pwnedpasswords.com',
-} as const;
-
-const DEFAULT_USER_AGENT = 'next-prot/pwned-password-check' as const;
-
-const PREFIX_LENGTH = 5 as const;
+  enabled: getEnvBoolean('PWNED_PASSWORD_VALIDATION_ENABLED', false),
+  maxCount: getEnvNumber('PWNED_PASSWORD_MAX_COUNT', DEFAULT_MAX_COUNT),
+  timeoutMs: getEnvNumber('PWNED_PASSWORD_TIMEOUT_MS', DEFAULT_TIMEOUT_MS),
+  apiBaseUrl: getEnvString('PWNED_PASSWORD_API_BASE_URL', DEFAULT_API_BASE_URL),
+  retryLimit: getEnvNumber('PWNED_PASSWORD_MAX_RETRIES', DEFAULT_RETRY_LIMIT),
+  retryDelayMs: getEnvNumber('PWNED_PASSWORD_RETRY_DELAY_MS', DEFAULT_RETRY_DELAY_MS),
+};
 
 export async function checkPwnedPassword(password: string): Promise<PwnedPasswordCheckResult> {
   if (!cachedConfig.enabled) {
-    return { compromised: false, count: 0 };
+    return { compromised: false, count: DEFAULT_SUFFIX_COUNT };
   }
 
   const sha1Hash = hashPasswordToSha1(password);
@@ -34,7 +46,7 @@ export async function checkPwnedPassword(password: string): Promise<PwnedPasswor
 
   try {
     const suffixes = await fetchPwnedPasswordSuffixes(prefix);
-    const count = suffixes.get(suffix) ?? 0;
+    const count = suffixes.get(suffix) ?? DEFAULT_SUFFIX_COUNT;
     const compromised = count >= cachedConfig.maxCount;
 
     if (compromised) {
@@ -54,29 +66,46 @@ export function hashPasswordToSha1(password: string): string {
 }
 
 async function fetchPwnedPasswordSuffixes(prefix: string): Promise<Map<string, number>> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), cachedConfig.timeoutMs);
+  let lastError: unknown;
+  const attempts = Math.max(1, cachedConfig.retryLimit);
 
-  try {
-    const response = await fetch(`${cachedConfig.apiBaseUrl}/range/${prefix}`, {
-      method: 'GET',
-      headers: {
-        'Add-Padding': 'true',
-        'User-Agent': DEFAULT_USER_AGENT,
-      },
-      cache: 'no-store',
-      signal: controller.signal,
-    });
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), cachedConfig.timeoutMs);
 
-    if (!response.ok) {
-      throw new Error(`pwned-password-response:${response.status}`);
+    try {
+      const response = await fetch(`${cachedConfig.apiBaseUrl}/range/${prefix}`, {
+        method: 'GET',
+        headers: {
+          'Add-Padding': 'true',
+          'User-Agent': DEFAULT_USER_AGENT,
+        },
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      if (response.ok) {
+        const body = await response.text();
+        return parseRangeResponse(body);
+      }
+
+      lastError = new Error(`pwned-password-response:${response.status}`);
+      if (!isRetryableStatus(response.status) || attempt === attempts - 1) {
+        throw lastError;
+      }
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts - 1) {
+        throw error;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
 
-    const body = await response.text();
-    return parseRangeResponse(body);
-  } finally {
-    clearTimeout(timeoutId);
+    await delay(cachedConfig.retryDelayMs * 2 ** attempt);
   }
+
+  throw lastError instanceof Error ? lastError : new Error('pwned-password:unknown-error');
 }
 
 const PARSE_INT = 10 as const;
@@ -104,4 +133,20 @@ function parseRangeResponse(body: string): Map<string, number> {
   }
 
   return map;
+}
+
+function isRetryableStatus(status: number): boolean {
+  if (status === 429) {
+    return true;
+  }
+
+  if (status >= 500 && status < 600) {
+    return true;
+  }
+
+  return false;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }

@@ -1,3 +1,4 @@
+import { getEnvString } from '@/shared/env';
 import { handleChatConnection } from '@/server/chat-ws-handler';
 import { handleExportConnection } from '@/server/export-ws-handler';
 import { createServer } from 'http';
@@ -5,7 +6,7 @@ import next from 'next';
 import { parse } from 'url';
 import { WebSocketServer } from 'ws';
 
-const dev = process.env.NODE_ENV !== 'production';
+const dev = getEnvString('NODE_ENV', '') !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 

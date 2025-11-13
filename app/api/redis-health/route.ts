@@ -1,10 +1,12 @@
+import { getEnvString } from '@/shared/env';
 import { ensureRedisConnection } from '@/server/redis';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  if (!process.env.REDIS_URL) {
+  const redisUrl = getEnvString('REDIS_URL', '');
+  if (!redisUrl) {
     return NextResponse.json(
       {
         ok: false,
