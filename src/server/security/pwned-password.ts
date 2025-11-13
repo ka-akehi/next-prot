@@ -66,12 +66,12 @@ export function hashPasswordToSha1(password: string): string {
 }
 
 async function fetchPwnedPasswordSuffixes(prefix: string): Promise<Map<string, number>> {
-  let lastError: unknown;
-  const attempts = Math.max(1, cachedConfig.retryLimit);
+  const maxAttemptCount = Math.max(1, cachedConfig.retryLimit);
 
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  for (let attempt = 0; attempt < maxAttemptCount; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), cachedConfig.timeoutMs);
+    const isLastAttempt = attempt >= maxAttemptCount - 1;
 
     try {
       const response = await fetch(`${cachedConfig.apiBaseUrl}/range/${prefix}`, {
@@ -89,23 +89,19 @@ async function fetchPwnedPasswordSuffixes(prefix: string): Promise<Map<string, n
         return parseRangeResponse(body);
       }
 
-      lastError = new Error(`pwned-password-response:${response.status}`);
-      if (!isRetryableStatus(response.status) || attempt === attempts - 1) {
-        throw lastError;
-      }
+      handleHttpFailure(response.status, isLastAttempt);
     } catch (error) {
-      lastError = error;
-      if (attempt === attempts - 1) {
-        throw error;
-      }
+      handleExceptionFailure(error, isLastAttempt);
     } finally {
       clearTimeout(timeoutId);
     }
 
-    await delay(cachedConfig.retryDelayMs * 2 ** attempt);
+    if (attempt < maxAttemptCount - 1) {
+      await new Promise((resolve) => setTimeout(resolve, Math.max(0, cachedConfig.retryDelayMs * 2 ** attempt)));
+    }
   }
 
-  throw lastError instanceof Error ? lastError : new Error('pwned-password:unknown-error');
+  throw new Error('pwned-password:unknown-error');
 }
 
 const PARSE_INT = 10 as const;
@@ -135,18 +131,31 @@ function parseRangeResponse(body: string): Map<string, number> {
   return map;
 }
 
-function isRetryableStatus(status: number): boolean {
-  if (status === 429) {
-    return true;
+function handleHttpFailure(status: number, isLastAttempt: boolean): void {
+  const retryable = isRetryableStatus(status);
+  if (retryable && !isLastAttempt) {
+    return;
   }
 
-  if (status >= 500 && status < 600) {
+  throw new Error(`pwned-password-response:${status}`);
+}
+
+function handleExceptionFailure(reason: unknown, isLastAttempt: boolean): void {
+  if (!isLastAttempt) {
+    return;
+  }
+
+  if (reason instanceof Error) {
+    throw reason;
+  }
+
+  throw new Error('pwned-password:unknown-error');
+}
+
+function isRetryableStatus(status: number): boolean {
+  if (status === 429 || status >= 500) {
     return true;
   }
 
   return false;
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
