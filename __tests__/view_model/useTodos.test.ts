@@ -9,7 +9,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 /**
  * @jest-environment jsdom
  */
-describe('useTodos (fast)', () => {
+describe('useTodos（高速テスト）', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

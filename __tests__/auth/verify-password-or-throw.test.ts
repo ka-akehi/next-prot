@@ -67,7 +67,7 @@ const allowContext: AccountRateLimitLogContext = {
   },
 };
 
-describe('verifyPasswordOrThrow', () => {
+describe('verifyPasswordOrThrow 関数', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createRateLimitPipelineMock.mockResolvedValue({
@@ -91,18 +91,29 @@ describe('verifyPasswordOrThrow', () => {
     resetLoginStateMock.mockResolvedValue(baseUser);
   });
 
-  it('throws when rate limit denies the attempt', async () => {
+  it('レート制限で拒否された場合は例外を送出する', async () => {
     const denyContext: AccountRateLimitLogContext = {
       ...allowContext,
       result: { ...allowContext.result, allowed: false, retryAfterSeconds: 120, remaining: 0 },
     };
 
-    createRateLimitPipelineMock.mockResolvedValueOnce({
-      identifier: denyContext.identifier,
-      redisAvailable: true,
-      fallbackActive: false,
-      enforceContext: denyContext,
-    });
+    createRateLimitPipelineMock
+      .mockResolvedValueOnce({
+        identifier: denyContext.identifier,
+        redisAvailable: true,
+        fallbackActive: false,
+        enforceContext: denyContext,
+      })
+      .mockReturnValueOnce(
+        Promise.resolve({
+          identifier: denyContext.identifier,
+          redisAvailable: true,
+          fallbackActive: false,
+          enforceContext: denyContext,
+        })
+      );
+
+    const pipeline = await createRateLimitPipelineMock(denyContext.identifier);
 
     recordRateLimitFailureMock.mockResolvedValueOnce({
       action: 'record',
@@ -110,7 +121,7 @@ describe('verifyPasswordOrThrow', () => {
       result: { ...denyContext.result },
     });
 
-    await expect(verifyPasswordOrThrow({ ...baseUser }, 'password')).rejects.toMatchObject({
+    await expect(verifyPasswordOrThrow({ ...baseUser }, 'password', pipeline)).rejects.toMatchObject({
       message: AUTH_ERROR_CODES.TooManyRequestsShortWait,
       accountRateLimit: {
         action: 'record',
@@ -125,12 +136,36 @@ describe('verifyPasswordOrThrow', () => {
     expect(resetRateLimitStateMock).not.toHaveBeenCalled();
   });
 
-  it('propagates password verification errors', async () => {
+  it('パスワード検証で発生したエラーを伝播する', async () => {
     const rateLimitContext: AccountRateLimitLogContext = {
       ...allowContext,
       action: 'record',
       result: { ...allowContext.result, allowed: false, remaining: 0, retryAfterSeconds: 300 },
     };
+
+    createRateLimitPipelineMock
+      .mockResolvedValueOnce({
+        identifier: rateLimitContext.identifier,
+        redisAvailable: true,
+        fallbackActive: false,
+        enforceContext: rateLimitContext,
+      })
+      .mockReturnValueOnce(
+        Promise.resolve({
+          identifier: rateLimitContext.identifier,
+          redisAvailable: true,
+          fallbackActive: false,
+          enforceContext: rateLimitContext,
+        })
+      );
+
+    const pipeline = await createRateLimitPipelineMock(rateLimitContext.identifier);
+
+    recordRateLimitFailureMock.mockResolvedValueOnce({
+      action: 'record',
+      identifier: rateLimitContext.identifier,
+      result: { ...rateLimitContext.result },
+    });
 
     verifyPasswordMock.mockImplementationOnce(async () => {
       const error = new Error(AUTH_ERROR_CODES.TooManyRequestsShortWait) as RateLimitedError;
@@ -138,16 +173,16 @@ describe('verifyPasswordOrThrow', () => {
       throw error;
     });
 
-    await expect(verifyPasswordOrThrow({ ...baseUser }, 'password')).rejects.toMatchObject({
+    await expect(verifyPasswordOrThrow({ ...baseUser }, 'password', pipeline)).rejects.toMatchObject({
       message: AUTH_ERROR_CODES.TooManyRequestsShortWait,
       accountRateLimit: rateLimitContext,
     });
     expect(resetRateLimitStateMock).not.toHaveBeenCalled();
   });
 
-  it('returns sanitized user and reset context on success', async () => {
+  it('成功時には整形済みユーザーとリセット結果を返す', async () => {
     const updatedUser = { ...baseUser, loginAttempts: 1 };
-    verifyPasswordMock.mockResolvedValueOnce(updatedUser);
+    verifyPasswordMock.mockReset().mockResolvedValueOnce(updatedUser);
     resetLoginStateMock.mockResolvedValueOnce({ ...updatedUser, loginAttempts: 0 });
 
     const resetContext: AccountRateLimitLogContext = {
@@ -157,7 +192,25 @@ describe('verifyPasswordOrThrow', () => {
     };
     resetRateLimitStateMock.mockResolvedValueOnce(resetContext);
 
-    const result = await verifyPasswordOrThrow({ ...baseUser }, 'password');
+    createRateLimitPipelineMock
+      .mockReset()
+      .mockResolvedValueOnce({
+        identifier: resetContext.identifier,
+        redisAvailable: true,
+        fallbackActive: false,
+        enforceContext: resetContext,
+      })
+      .mockReturnValueOnce(
+        Promise.resolve({
+          identifier: resetContext.identifier,
+          redisAvailable: true,
+          fallbackActive: false,
+          enforceContext: resetContext,
+        })
+      );
+
+    const pipeline = await createRateLimitPipelineMock(resetContext.identifier);
+    const result = await verifyPasswordOrThrow({ ...baseUser }, 'password', pipeline);
 
     expect(result.user.loginAttempts).toBe(0);
     expect(result.accountRateLimit).toBe(resetContext);
@@ -165,17 +218,36 @@ describe('verifyPasswordOrThrow', () => {
     expect(resetRateLimitStateMock).toHaveBeenCalled();
   });
 
-  it('falls back to enforce context when reset returns undefined', async () => {
-    resetRateLimitStateMock.mockResolvedValueOnce(undefined);
+  it('リセット結果が未定義のときは enforce コンテキストを使う', async () => {
+    resetRateLimitStateMock.mockReset().mockResolvedValueOnce(undefined);
 
-    const result = await verifyPasswordOrThrow({ ...baseUser }, 'password');
+    createRateLimitPipelineMock
+      .mockReset()
+      .mockResolvedValueOnce({
+        identifier: allowContext.identifier,
+        redisAvailable: true,
+        fallbackActive: false,
+        enforceContext: allowContext,
+      })
+      .mockReturnValueOnce(
+        Promise.resolve({
+          identifier: allowContext.identifier,
+          redisAvailable: true,
+          fallbackActive: false,
+          enforceContext: allowContext,
+        })
+      );
+
+    const pipeline = await createRateLimitPipelineMock(allowContext.identifier);
+
+    const result = await verifyPasswordOrThrow({ ...baseUser }, 'password', pipeline);
 
     expect(result.accountRateLimit).toEqual(allowContext);
   });
 });
 
-describe('buildLogContext', () => {
-  it('adds accountRateLimit when provided', () => {
+describe('buildLogContext 関数', () => {
+  it('accountRateLimit が指定された場合はログに含める', () => {
     const context = {
       action: 'enforce',
       identifier: 'id',
@@ -186,7 +258,7 @@ describe('buildLogContext', () => {
     expect(buildLogContextMock).toHaveBeenCalledWith(context);
   });
 
-  it('omits accountRateLimit when undefined', () => {
+  it('accountRateLimit が未定義の場合はログから省略する', () => {
     const log = buildLogContext(undefined);
     expect(log).toEqual({ provider: 'credentials' });
   });

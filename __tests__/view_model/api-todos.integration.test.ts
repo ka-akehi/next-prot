@@ -11,7 +11,7 @@ import { describe, expect } from '@jest/globals';
 /**
  * @jest-environment node
  */
-describe('Route Handlers: /api/todos (integration-ish)', () => {
+describe('/api/todos ルートハンドラ（統合テスト）', () => {
   beforeAll(async () => {
     await deleteAllTodos();
   });
@@ -20,7 +20,7 @@ describe('Route Handlers: /api/todos (integration-ish)', () => {
     await prisma.$disconnect();
   });
 
-  it('POST -> GET -> DELETE -> GET', async () => {
+  it('POST→GET→DELETE→GET の一連操作を通しで確認できる', async () => {
     // POST
     const postReq = new Request('http://localhost/api/todos', {
       method: 'POST',

@@ -39,7 +39,7 @@ Object.defineProperty(global.Notification, 'permission', {
 
 global.fetch = jest.fn();
 
-describe('usePushNotification', () => {
+describe('usePushNotification フック', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (mockServiceWorkerReady.pushManager.getSubscription as jest.Mock).mockResolvedValue(null);

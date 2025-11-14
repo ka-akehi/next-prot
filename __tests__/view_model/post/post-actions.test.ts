@@ -42,7 +42,7 @@ const mockPost = {
   },
 };
 
-describe('createPost', () => {
+describe('createPost 関数', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -79,7 +79,7 @@ describe('createPost', () => {
   });
 });
 
-describe('deletePostById', () => {
+describe('deletePostById 関数', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -117,7 +117,7 @@ describe('deletePostById', () => {
   });
 });
 
-describe('updatePost', () => {
+describe('updatePost 関数', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

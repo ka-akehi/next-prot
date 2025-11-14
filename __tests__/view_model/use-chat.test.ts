@@ -2,7 +2,7 @@ import { useChat } from '@/view_model/use-chat';
 import { describe, expect } from '@jest/globals';
 import { act, renderHook } from '@testing-library/react';
 
-describe('useChat', () => {
+describe('useChat フック', () => {
   let mockWebSocket: jest.Mocked<WebSocket>;
 
   beforeEach(() => {

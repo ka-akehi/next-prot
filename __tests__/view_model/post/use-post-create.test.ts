@@ -12,7 +12,7 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }));
 
-describe('usePostCreate', () => {
+describe('usePostCreate フック', () => {
   const mockRouterRefresh = jest.fn();
   const mockUserId = 'test-user-id';
 
