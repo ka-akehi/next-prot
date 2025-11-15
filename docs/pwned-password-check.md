@@ -49,6 +49,10 @@
 2. [ ] API テスト:
    - [ ] `register` / `password` ルートで `P@ssw0rd` など既知漏えい値を入力し、400 と専用メッセージが返るかを E2E で確認。
    - [ ] 正常系では HIBP 呼び出しをスタブして 201/200 を確認。
-3. [ ] モニタリング:
+3. [x] E2E テスト:
+   - [x] `PWNED_PASSWORD_API_BASE_URL=http://localhost:3000/api/test-pwned-password-range` で Next サーバーを起動し、`/api/test-pwned-password` API から SHA-1 プレフィックスごとの件数スタブを注入できるようにする。
+   - [x] `cypress/e2e/auth-pwned-password.cy.ts` で漏えいパスワード投入時に `PASSWORD_ERROR_MESSAGES.pwnedPassword` が表示され、別のパスワードなら `REGISTER_SUCCESS_MESSAGES.completed` と `/bbs` への遷移まで確認する。
+   - [x] `/account/password/change`（パスワード変更）と `/account/password/new`（初期設定）でも同じ仕組みを共有し、漏えいパスワードで 400 が返り UI にエラーが表示されることを検証する。
+4. [ ] モニタリング:
    - [ ] Pwned 判定が連続した場合にセキュリティチームへ通知（Slack Hook や SIEM アラート）を設定。
    - [ ] レート超過や API 障害に備え、`checkPwnedPassword` の例外発生数をメトリクス化。

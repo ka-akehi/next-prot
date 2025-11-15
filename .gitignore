@@ -50,3 +50,4 @@ package-lock.json
 /logs/*
 !/logs/.gitkeep
 app/api/internal/account-rate-limit/reset/route.ts
+cypress/screenshots

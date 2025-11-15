@@ -10,7 +10,7 @@ const DEFAULT_USER_AGENT = 'next-prot/pwned-password-check' as const;
 
 const PREFIX_LENGTH = 5 as const;
 
-const DEFAULT_SUFFIX_COUNT = 1 as const;
+const DEFAULT_SUFFIX_COUNT = 0 as const;
 const DEFAULT_MAX_COUNT = 1 as const;
 const DEFAULT_TIMEOUT_MS = 2000 as const;
 const DEFAULT_API_BASE_URL = 'https://api.pwnedpasswords.com' as const;
@@ -105,7 +105,7 @@ async function fetchPwnedPasswordSuffixes(prefix: string): Promise<Map<string, n
 }
 
 const PARSE_INT = 10 as const;
-const RETURN_SUFFIX_LENGTH = 35 as const;
+export const RETURN_SUFFIX_LENGTH = 35 as const;
 
 function parseRangeResponse(body: string): Map<string, number> {
   const map = new Map<string, number>();

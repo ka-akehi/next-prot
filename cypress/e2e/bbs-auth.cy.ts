@@ -72,15 +72,8 @@ describe('BBS Auth & Navigation & SSR', () => {
 
   it('未ログイン: /mypage はゲスト向け表示（middlewareなしのためリダイレクトはしない）', () => {
     cy.visit('/mypage');
-
-    cy.get('body').then(($b) => {
-      const hasTestId = $b.find('[data-testid="mypage-guest"]').length > 0;
-      if (hasTestId) {
-        cy.get('[data-testid="mypage-guest"]').should('contain', 'ログインしてください');
-      } else {
-        cy.contains('このページを見るにはログインしてください。').should('exist');
-      }
-    });
+    cy.location('pathname').should('eq', '/login');
+    cy.contains(/ログイン/i).should('exist');
   });
 
   it('ログイン後: /bbs でフォームが表示され、自分の投稿だけ編集/削除できる', () => {
@@ -147,16 +140,9 @@ describe('BBS Auth & Navigation & SSR', () => {
     // /mypage を確認
     cy.visit('/mypage');
 
-    // testid があればそれを優先
-    cy.get('body').then(($b) => {
-      const hasTestId = $b.find('[data-testid="mypage-guest"]').length > 0;
-      if (hasTestId) {
-        cy.get('[data-testid="mypage-guest"]').should('contain', 'ログイン');
-      } else {
-        // 文言の揺れに強くする（句点や表現差を吸収）
-        cy.contains(/ログイン.*必要|ログインしてください/).should('exist');
-      }
-    });
+    // ログイン画面にリダイレクト
+    cy.location('pathname').should('eq', '/login');
+    cy.contains(/ログイン/i).should('exist');
 
     // ヘッダーも未ログイン状態
     cy.get('[data-testid="nav-login"]').should('exist');

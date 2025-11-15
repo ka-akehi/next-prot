@@ -31,7 +31,7 @@
 1. ✅ アカウント単位の失敗カウント（Redis）と指数バックオフの実装
    redis サーバーでキーを取得する場合`laravel-prot` で`docker exec -it redis redis-cli`
 2. ✅ CAPTCHA（閾値超過で発動）を導入（reCAPTCHA / hCaptcha など）
-3. クレデンシャル・スタッフィング対応：登録/更新時に Pwned Passwords でチェック
+3. ✅ クレデンシャル・スタッフィング対応：登録/更新時に Pwned Passwords でチェック
 4. ✅ ログイン成功時に失敗カウントをリセット
 
 チェックポイント: 同一アカウントに対するなりすまし試行が減る / CAPTCHA でボットを弾ける

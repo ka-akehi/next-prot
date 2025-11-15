@@ -1,20 +1,18 @@
-"use server";
+'use server';
 
-import { POST_ERROR_MESSAGES } from "@domain/messages/error.messages";
-import { createPost as createPostRecord } from "@/repositories/posts/post.repository";
-import { logServerError } from "@/helpers/server-log.helpers";
+import { logServerError } from '@/helpers/server-log.helpers';
+import { createPost as createPostRecord } from '@/repositories/posts/post.repository';
+import { POST_ERROR_MESSAGES } from '@domain/messages/error.messages';
 
 export async function createPost(content: string) {
   try {
     const post = await createPostRecord({
-      data: {
-        content,
-        userId: "dummy", // ここでエラーを発生させる例
-      },
+      content,
+      user: { connect: { id: 'dummy' } }, // ここでエラーを発生させる例
     });
     return post;
   } catch (error) {
-    await logServerError(error, "createPost");
+    await logServerError(error, 'createPost');
     throw new Error(POST_ERROR_MESSAGES.createFailed);
   }
 }
