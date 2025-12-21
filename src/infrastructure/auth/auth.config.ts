@@ -1,4 +1,3 @@
-import { getEnvString } from '@/shared/env';
 import {
   ensureAccountNotLocked,
   ensurePasswordIsConfigured,
@@ -12,6 +11,7 @@ import {
 import { buildLogContext, createRateLimitPipeline, RateLimitedError } from '@/helpers/auth/rate-limit';
 import { enforceRecaptchaRequirement } from '@/helpers/auth/recaptcha';
 import { findUserById } from '@/repositories/users/user.repository';
+import { getEnvString } from '@/shared/env';
 import { AUTH_ERROR_CODES } from '@domain/auth/auth.errors';
 import { logAuthAttempt } from '@infrastructure/logging/auth-attempt-logger';
 import { prisma } from '@infrastructure/persistence/prisma';
