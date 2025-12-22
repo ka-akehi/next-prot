@@ -12,6 +12,10 @@ const groups = [
 ];
 
 const now = Date.now();
+const today = new Date(now);
+today.setHours(0, 0, 0, 0);
+const startOfToday = today.getTime();
+const endOfToday = startOfToday + 24 * HOUR_MS;
 
 const initialItems = [
   {
@@ -68,6 +72,10 @@ const toLocalInputValue = (timestamp: number) => {
 export default function TimelinePage() {
   const [items, setItems] = useState(initialItems);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [visibleTime, setVisibleTime] = useState({
+    start: startOfToday,
+    end: endOfToday,
+  });
   const [form, setForm] = useState<FormState>({
     title: '',
     group: groups[0]?.id ?? 1,
@@ -154,6 +162,22 @@ export default function TimelinePage() {
             items={items}
             defaultTimeStart={now - 6 * HOUR_MS}
             defaultTimeEnd={now + 6 * HOUR_MS}
+            onTimeChange={(visibleTimeStart, visibleTimeEnd, updateScrollCanvas) => {
+              const zoomLength = 12 * HOUR_MS;
+              let nextStart = visibleTimeStart;
+
+              if (visibleTimeStart < startOfToday) {
+                nextStart = startOfToday;
+              } else if (visibleTimeEnd > endOfToday) {
+                nextStart = endOfToday - zoomLength;
+              }
+
+              const nextEnd = nextStart + zoomLength;
+              setVisibleTime({ start: nextStart, end: nextEnd });
+              updateScrollCanvas(nextStart, nextEnd);
+            }}
+            minZoom={12 * HOUR_MS}
+            maxZoom={12 * HOUR_MS}
             itemHeightRatio={0.75}
             lineHeight={52}
             sidebarWidth={140}
