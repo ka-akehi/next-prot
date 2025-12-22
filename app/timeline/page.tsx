@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Timeline from 'react-calendar-timeline';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -11,42 +11,13 @@ const groups = [
   { id: 3, title: 'QA' },
 ];
 
-const now = Date.now();
-const today = new Date(now);
-today.setHours(0, 0, 0, 0);
-const startOfToday = today.getTime();
-const endOfToday = startOfToday + 24 * HOUR_MS;
-
-const initialItems = [
-  {
-    id: 1,
-    group: 1,
-    title: 'Wireframes',
-    start_time: now - 3 * HOUR_MS,
-    end_time: now - 1 * HOUR_MS,
-  },
-  {
-    id: 2,
-    group: 2,
-    title: 'API Integration',
-    start_time: now - 2 * HOUR_MS,
-    end_time: now + 2 * HOUR_MS,
-  },
-  {
-    id: 3,
-    group: 3,
-    title: 'Regression',
-    start_time: now + 1 * HOUR_MS,
-    end_time: now + 4 * HOUR_MS,
-  },
-  {
-    id: 4,
-    group: 2,
-    title: 'UI Polish',
-    start_time: now + 3 * HOUR_MS,
-    end_time: now + 5 * HOUR_MS,
-  },
-];
+type TimelineItem = {
+  id: number;
+  group: number;
+  title: string;
+  start_time: number;
+  end_time: number;
+};
 
 type ModalMode = 'edit' | 'create' | null;
 
@@ -70,20 +41,85 @@ const toLocalInputValue = (timestamp: number) => {
 };
 
 export default function TimelinePage() {
-  const [items, setItems] = useState(initialItems);
+  const [now, setNow] = useState<number | null>(null);
+  const [items, setItems] = useState<TimelineItem[]>([]);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [visibleTime, setVisibleTime] = useState({
-    start: startOfToday,
-    end: endOfToday,
+    start: 0,
+    end: 0,
   });
   const [form, setForm] = useState<FormState>({
     title: '',
     group: groups[0]?.id ?? 1,
-    start: now,
-    end: now + HOUR_MS,
+    start: 0,
+    end: HOUR_MS,
   });
 
+  useEffect(() => {
+    const currentNow = Date.now();
+    const today = new Date(currentNow);
+    today.setHours(0, 0, 0, 0);
+    const startOfDay = today.getTime();
+    const endOfDay = startOfDay + 24 * HOUR_MS;
+
+    setNow(currentNow);
+    setItems([
+      {
+        id: 1,
+        group: 1,
+        title: 'Wireframes',
+        start_time: currentNow - 3 * HOUR_MS,
+        end_time: currentNow - 1 * HOUR_MS,
+      },
+      {
+        id: 2,
+        group: 2,
+        title: 'API Integration',
+        start_time: currentNow - 2 * HOUR_MS,
+        end_time: currentNow + 2 * HOUR_MS,
+      },
+      {
+        id: 3,
+        group: 3,
+        title: 'Regression',
+        start_time: currentNow + 1 * HOUR_MS,
+        end_time: currentNow + 4 * HOUR_MS,
+      },
+      {
+        id: 4,
+        group: 2,
+        title: 'UI Polish',
+        start_time: currentNow + 3 * HOUR_MS,
+        end_time: currentNow + 5 * HOUR_MS,
+      },
+    ]);
+    setVisibleTime({ start: startOfDay, end: endOfDay });
+    setForm({
+      title: '',
+      group: groups[0]?.id ?? 1,
+      start: currentNow,
+      end: currentNow + HOUR_MS,
+    });
+  }, []);
+
   const nextId = useMemo(() => items.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1, [items]);
+
+  if (now === null) {
+    return (
+      <div className='min-h-screen bg-slate-950 text-slate-100 px-6 py-10'>
+        <div className='mx-auto max-w-5xl space-y-6'>
+          <div className='h-7 w-48 animate-pulse rounded-lg bg-slate-800' />
+          <div className='h-3 w-64 animate-pulse rounded-lg bg-slate-800/80' />
+          <div className='h-[420px] rounded-2xl bg-white/10' />
+        </div>
+      </div>
+    );
+  }
+
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const startOfToday = today.getTime();
+  const endOfToday = startOfToday + 24 * HOUR_MS;
 
   const openEditModal = (itemId: number) => {
     const target = items.find((item) => item.id === itemId);
